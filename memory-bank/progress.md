@@ -1,4 +1,4 @@
-# Progress: ScoutsTribe - Mock Auth & RBAC Implemented
+# Progress: ScoutsTribe - Messaging Channels API Implemented
 
 ## ✅ What Works
 
@@ -9,7 +9,8 @@
     - Basic `package.json` initialized.
     - Express installed.
     - `nodemon` installed and `npm run dev` script added.
-    - Basic `server/server.js` created with mock auth logic (signup, login, logout) and mock RBAC middleware (`checkAuth`, `checkRole`) using in-memory data. Added sample protected route.
+    - Basic `server/server.js` created with mock auth logic (signup, login, logout) and mock RBAC middleware (`checkAuth`, `checkRole`) using in-memory data.
+    - Implemented messaging channels API endpoints with mock data structures.
 - **Client Setup:** Basic Next.js project initialized in `client/`.
 
 ## 🏗️ What's Left to Build (MVP Scope)
@@ -20,7 +21,7 @@
 - **Features:**
     - Role-based login system (Users: Scout Leader, Grade Manager, Counselor) - *Backend mock auth & RBAC logic implemented*.
     - Group assignment interface (Admin functionality).
-    - Grade-based messaging channels.
+    - Grade-based messaging channels - *Backend API endpoints implemented*.
     - Message search functionality.
     - Weekly form templates.
     - Form submission mechanism and tracking dashboard.
@@ -31,12 +32,12 @@
     - Year switcher mechanism (frontend).
     - Archive viewer for past years' data (read-only).
     - Database schema design and implementation.
-    - API endpoints for all features - *Mock auth endpoints implemented*.
+    - API endpoints for all features - *Mock auth and messaging channels endpoints implemented*.
     - Frontend UI components for all features.
 
 ## 🚦 Current Status
 
-- **Phase:** Mock Auth & RBAC Implementation.
+- **Phase:** Core Features Implementation (Messaging Channels).
 - **Blockers:** None locally. Git push pending resolution of connection issue.
 
 ## ❗ Known Issues

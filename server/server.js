@@ -8,6 +8,10 @@ const PORT = process.env.PORT || 3001; // Use port 3001 as a common alternative 
 // --- Mock Data Store (Replace with actual DB later) ---
 const mockUsers = []; // Stores { id, email, password, role }
 let nextUserId = 1;
+const mockChannels = []; // Stores { id, name, grade }
+let nextChannelId = 1;
+const mockMessages = []; // Stores { id, channelId, userId, userName, text, timestamp }
+let nextMessageId = 1;
 // --- End Mock Data Store ---
 
 // Basic route for testing
@@ -147,6 +151,83 @@ app.get(
 );
 
 // --- End Sample Protected Route ---
+
+// --- Messaging Channel Routes (Mock Data) ---
+
+// GET /api/channels - List all channels (requires auth)
+app.get('/api/channels', checkAuth, (req, res) => {
+  console.log(`User ${req.user.email} requested channel list`);
+  res.status(200).json(mockChannels);
+});
+
+// POST /api/channels - Create a new channel (requires Admin or Scout Leader)
+app.post(
+  '/api/channels',
+  checkAuth,
+  checkRole(['Admin', 'Scout Leader']),
+  (req, res) => {
+    const { name, grade } = req.body;
+    if (!name || !grade) {
+      return res.status(400).json({ message: 'Channel name and grade are required' });
+    }
+
+    const newChannel = {
+      id: nextChannelId++,
+      name,
+      grade
+    };
+    mockChannels.push(newChannel);
+    console.log(`User ${req.user.email} created channel:`, newChannel);
+    console.log('Current Mock Channels:', mockChannels);
+    res.status(201).json(newChannel);
+  }
+);
+
+// GET /api/channels/:channelId/messages - List messages for a channel (requires auth)
+app.get('/api/channels/:channelId/messages', checkAuth, (req, res) => {
+  const channelId = parseInt(req.params.channelId, 10);
+  const channel = mockChannels.find(c => c.id === channelId);
+
+  if (!channel) {
+    return res.status(404).json({ message: 'Channel not found' });
+  }
+
+  const messagesInChannel = mockMessages.filter(m => m.channelId === channelId);
+  console.log(`User ${req.user.email} requested messages for channel ${channelId}`);
+  res.status(200).json(messagesInChannel);
+});
+
+// POST /api/channels/:channelId/messages - Post a message to a channel (requires auth)
+app.post('/api/channels/:channelId/messages', checkAuth, (req, res) => {
+  const channelId = parseInt(req.params.channelId, 10);
+  const { text } = req.body;
+  const channel = mockChannels.find(c => c.id === channelId);
+
+  if (!channel) {
+    return res.status(404).json({ message: 'Channel not found' });
+  }
+  if (!text) {
+    return res.status(400).json({ message: 'Message text is required' });
+  }
+
+  const newMessage = {
+    id: nextMessageId++,
+    channelId,
+    userId: req.user.id,
+    userName: req.user.email, // Use email as name for mock simplicity
+    text,
+    timestamp: new Date().toISOString()
+  };
+  mockMessages.push(newMessage);
+  console.log(`User ${req.user.email} posted message to channel ${channelId}:`, newMessage);
+  console.log('Current Mock Messages:', mockMessages);
+
+  // In a real app, you might broadcast this message via WebSockets
+  res.status(201).json(newMessage);
+});
+
+// --- End Messaging Channel Routes ---
+
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
