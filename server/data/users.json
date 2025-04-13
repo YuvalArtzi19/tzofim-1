@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "email": "admin@scoutstribe.com",
+    "password": "admin123",
+    "roles": [
+      "Admin"
+    ],
+    "grade": "operations"
+  },
+  {
+    "id": 2,
+    "email": "leader@scoutstribe.com",
+    "password": "leader123",
+    "roles": [
+      "Tribe Leader"
+    ],
+    "grade": "9"
+  },
+  {
+    "id": 3,
+    "email": "counselor@scoutstribe.com",
+    "password": "counselor123",
+    "roles": [
+      "Counselor"
+    ],
+    "grade": "8"
+  },
+  {
+    "id": 4,
+    "email": "user1@example.com",
+    "password": "user123",
+    "roles": [
+      "Counselor"
+    ],
+    "grade": "3"
+  },
+  {
+    "id": 5,
+    "email": "user2@example.com",
+    "password": "user2123",
+    "roles": [
+      "Counselor"
+    ],
+    "grade": "4"
+  }
+]

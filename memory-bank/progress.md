@@ -32,6 +32,10 @@
     - Added total attendance count in statistics.
     - Fixed grade restrictions for event attendance.
     - Fixed duplicate navigation in admin page.
+    - Added data persistence using JSON files.
+    - Added automatic data loading and saving.
+    - Added proper grade validation for events.
+    - Added total attendance tracking.
 
 ## 🏗️ What's Left to Build (MVP Scope)
 

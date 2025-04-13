@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const { loadData, saveData, initializeData, getNextId } = require('./data/persistence');
+
 const app = express();
 
 // Middleware to parse JSON bodies
@@ -12,50 +14,43 @@ app.use(cors({
 
 // Parse JSON request bodies
 app.use(express.json());
-const PORT = process.env.PORT || 3001; // Use port 3001 as a common alternative to 3000 (often used by client dev servers)
+const PORT = process.env.PORT || 3001;
 
-// --- Mock Data Store (Replace with actual DB later) ---
-const mockUsers = [
-  // Pre-defined admin user for testing
-  {
-    id: 1,
-    email: 'admin@scoutstribe.com',
-    password: 'admin123', // In a real app, this would be hashed
-    roles: ['Admin'],
-    grade: 'operations'
-  },
-  // Pre-defined Scout Leader for testing
-  {
-    id: 2,
-    email: 'leader@scoutstribe.com',
-    password: 'leader123', // In a real app, this would be hashed
-    roles: ['Tribe Leader'],
-    grade: '9'
-  },
-  // Pre-defined Counselor for testing
-  {
-    id: 3,
-    email: 'counselor@scoutstribe.com',
-    password: 'counselor123', // In a real app, this would be hashed
-    roles: ['Counselor'],
-    grade: '8'
-  }
-];
-let nextUserId = 4; // Start after our pre-defined users
-const mockChannels = []; // Stores { id, name, grade }
-let nextChannelId = 1;
-const mockMessages = []; // Stores { id, channelId, userId, userName, text, timestamp }
-let nextMessageId = 1;
+// Initialize data store
+initializeData().catch(console.error);
 
-// Member and event management data structures
-const mockMembers = []; // Stores { id, firstName, lastName, grade, year }
-let nextMemberId = 1;
+// --- Data Store ---
+let users = [];
+let channels = [];
+let messages = [];
+let members = [];
+let events = [];
+let attendance = [];
 
-const mockEvents = []; // Stores { id, name, date, type: 'global'|'grade', grade?, createdBy }
-let nextEventId = 1;
+// Load initial data
+async function loadAllData() {
+  users = await loadData('users');
+  channels = await loadData('channels');
+  messages = await loadData('messages');
+  members = await loadData('members');
+  events = await loadData('events');
+  attendance = await loadData('attendance');
+}
 
-let mockAttendance = []; // Stores { eventId, memberId, attended, grade, year }
-// --- End Mock Data Store ---
+// Save data after modifications
+async function saveAllData() {
+  await Promise.all([
+    saveData('users', users),
+    saveData('channels', channels),
+    saveData('messages', messages),
+    saveData('members', members),
+    saveData('events', events),
+    saveData('attendance', attendance)
+  ]);
+}
+
+// Load initial data
+loadAllData().catch(console.error);
 
 // Basic route for testing
 app.get('/', (req, res) => {
@@ -65,7 +60,7 @@ app.get('/', (req, res) => {
 // --- Mock RBAC Middleware ---
 
 // Middleware to check for a valid mock token and attach user to request
-const checkAuth = (req, res, next) => {
+const checkAuth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -81,7 +76,7 @@ const checkAuth = (req, res, next) => {
   }
 
   const userId = parseInt(match[1], 10);
-  const user = mockUsers.find(u => u.id === userId);
+  const user = users.find(u => u.id === userId);
 
   if (!user) {
     return res.status(401).json({ message: 'Unauthorized: User not found for token' });
@@ -116,7 +111,7 @@ const checkRole = (allowedRoles) => {
 // --- Authentication Routes (Using Mock Data) ---
 
 // POST /api/auth/signup
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
   const { email, password, roles, grade } = req.body;
 
   if (!email || !password) {
@@ -124,7 +119,7 @@ app.post('/api/auth/signup', (req, res) => {
   }
 
   // Check if user already exists
-  const existingUser = mockUsers.find(user => user.email === email);
+  const existingUser = users.find(user => user.email === email);
   if (existingUser) {
     return res.status(409).json({ message: 'Email already in use' });
   }
@@ -134,16 +129,18 @@ app.post('/api/auth/signup', (req, res) => {
   const formattedGrade = grade ? normalizeGrade(grade) : '';
   
   const newUser = {
-    id: nextUserId++,
+    id: await getNextId('users'),
     email,
     password: password, // Storing plain text for mock purposes ONLY
     roles: roles || ['Counselor'], // Default role if not provided
     grade: formattedGrade // Store normalized grade
   };
-  mockUsers.push(newUser);
+  users.push(newUser);
+
+  // Save updated users to file
+  await saveData('users', users);
 
   console.log('Signup successful:', { id: newUser.id, email: newUser.email, roles: newUser.roles, grade: newUser.grade });
-  console.log('Current Mock Users:', mockUsers); // Log for debugging
 
   // Don't send password back
   res.status(201).json({
@@ -158,7 +155,7 @@ app.post('/api/auth/signup', (req, res) => {
 });
 
 // POST /api/auth/login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -166,7 +163,7 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   // Find user by email
-  const user = mockUsers.find(user => user.email === email);
+  const user = users.find(user => user.email === email);
 
   // TODO: Replace plain text comparison with hashed password verification
   if (!user || user.password !== password) {
@@ -203,7 +200,7 @@ app.get(
   (req, res) => {
     console.log(`User ${req.user.email} (Roles: ${req.user.roles.join(', ')}) accessed /api/admin/users`);
     // Return users without passwords
-    const usersForAdmin = mockUsers.map(u => ({
+    const usersForAdmin = users.map(u => ({
       id: u.id,
       email: u.email,
       roles: u.roles,
@@ -224,7 +221,7 @@ app.get(
     // Group users by grade
     const usersByGrade = {};
     
-    mockUsers.forEach(user => {
+    users.forEach(user => {
       if (!user.grade) return;
       
       if (!usersByGrade[user.grade]) {
@@ -253,7 +250,7 @@ app.get(
     // Group counselors and leads by grade
     const leadershipByGrade = {};
     
-    mockUsers.forEach(user => {
+    users.forEach(user => {
       if (!user.grade) return;
       
       if (!leadershipByGrade[user.grade]) {
@@ -289,7 +286,7 @@ app.put(
   '/api/admin/users/:userId/roles',
   checkAuth,
   checkRole(['Admin', 'Tribe Leader']),
-  (req, res) => {
+  async (req, res) => {
     const userId = parseInt(req.params.userId, 10);
     const { roles } = req.body;
     
@@ -297,7 +294,7 @@ app.put(
       return res.status(400).json({ message: 'Roles must be provided as an array' });
     }
     
-    const userToUpdate = mockUsers.find(u => u.id === userId);
+    const userToUpdate = users.find(u => u.id === userId);
     
     if (!userToUpdate) {
       return res.status(404).json({ message: 'User not found' });
@@ -319,6 +316,7 @@ app.put(
     
     // Update user roles
     userToUpdate.roles = roles;
+    await saveData('users', users);
     
     console.log(`User ${req.user.email} updated roles for user ${userToUpdate.email} to ${roles.join(', ')}`);
     
@@ -339,15 +337,14 @@ app.put(
   '/api/admin/users/:userId/grade',
   checkAuth,
   checkRole(['Admin', 'Tribe Leader']),
-  (req, res) => {
+  async (req, res) => {
     const userId = parseInt(req.params.userId, 10);
     const { grade } = req.body;
     
     if (!grade) {
       return res.status(400).json({ message: 'Grade must be provided' });
     }
-    
-    const userToUpdate = mockUsers.find(u => u.id === userId);
+    const userToUpdate = users.find(u => u.id === userId);
     
     if (!userToUpdate) {
       return res.status(404).json({ message: 'User not found' });
@@ -358,6 +355,7 @@ app.put(
     
     // Update user grade
     userToUpdate.grade = normalizedGrade;
+    await saveData('users', users);
     
     console.log(`User ${req.user.email} updated grade for user ${userToUpdate.email} to ${normalizedGrade}`);
     
@@ -378,11 +376,11 @@ app.delete(
   '/api/admin/users/:userId',
   checkAuth,
   checkRole(['Admin']), // Only admins can delete users
-  (req, res) => {
+  async (req, res) => {
     const userId = parseInt(req.params.userId, 10);
     
     // Find the user to delete
-    const userIndex = mockUsers.findIndex(u => u.id === userId);
+    const userIndex = users.findIndex(u => u.id === userId);
     
     if (userIndex === -1) {
       return res.status(404).json({ message: 'User not found' });
@@ -394,7 +392,8 @@ app.delete(
     }
     
     // Remove the user
-    const deletedUser = mockUsers.splice(userIndex, 1)[0];
+    const deletedUser = users.splice(userIndex, 1)[0];
+    await saveData('users', users);
     
     console.log(`User ${req.user.email} deleted user ${deletedUser.email}`);
     
@@ -413,7 +412,7 @@ app.post(
   '/api/admin/users',
   checkAuth,
   checkRole(['Admin']),
-  (req, res) => {
+  async (req, res) => {
     const { email, password, roles, grade } = req.body;
     
     if (!email || !password) {
@@ -421,21 +420,22 @@ app.post(
     }
     
     // Check if user already exists
-    const existingUser = mockUsers.find(user => user.email === email);
+    const existingUser = users.find(user => user.email === email);
     if (existingUser) {
       return res.status(409).json({ message: 'Email already in use' });
     }
     
     // Create new user
     const newUser = {
-      id: nextUserId++,
+      id: await getNextId('users'),
       email,
       password, // In a real app, this would be hashed
       roles: roles || ['Counselor'],
       grade: grade || ''
     };
     
-    mockUsers.push(newUser);
+    users.push(newUser);
+    await saveData('users', users);
     
     console.log(`User ${req.user.email} created new user:`, {
       id: newUser.id,
@@ -462,10 +462,10 @@ app.delete(
   '/api/admin/users/:userId/grade',
   checkAuth,
   checkRole(['Admin', 'Tribe Leader']),
-  (req, res) => {
+  async (req, res) => {
     const userId = parseInt(req.params.userId, 10);
     
-    const userToUpdate = mockUsers.find(u => u.id === userId);
+    const userToUpdate = users.find(u => u.id === userId);
     
     if (!userToUpdate) {
       return res.status(404).json({ message: 'User not found' });
@@ -476,6 +476,7 @@ app.delete(
     
     // Remove grade assignment
     userToUpdate.grade = '';
+    await saveData('users', users);
     
     console.log(`User ${req.user.email} removed grade assignment (${previousGrade}) for user ${userToUpdate.email}`);
     
@@ -500,7 +501,7 @@ app.get('/api/channels', checkAuth, (req, res) => {
   console.log(`User ${req.user.email} requested channel list`);
   
   // Filter channels based on user access
-  const accessibleChannels = mockChannels.filter(channel => canAccessChannel(req.user, channel));
+  const accessibleChannels = channels.filter(channel => canAccessChannel(req.user, channel));
   
   res.status(200).json(accessibleChannels);
 });
@@ -509,7 +510,7 @@ app.get('/api/channels', checkAuth, (req, res) => {
 app.post(
   '/api/channels',
   checkAuth,
-  (req, res) => {
+  async (req, res) => {
     const { name, grade } = req.body;
     if (!name || !grade) {
       return res.status(400).json({ message: 'Channel name and grade are required' });
@@ -541,13 +542,14 @@ app.post(
     const formattedGrade = normalizedRequestGrade + 'th';
     
     const newChannel = {
-      id: nextChannelId++,
+      id: await getNextId('channels'),
       name,
       grade: formattedGrade
     };
-    mockChannels.push(newChannel);
+    channels.push(newChannel);
+    await saveData('channels', channels);
+    
     console.log(`User ${req.user.email} created channel:`, newChannel);
-    console.log('Current Mock Channels:', mockChannels);
     res.status(201).json(newChannel);
   }
 );
@@ -580,7 +582,7 @@ const canAccessChannel = (user, channel) => {
 // GET /api/channels/:channelId/messages - List messages for a channel (requires auth)
 app.get('/api/channels/:channelId/messages', checkAuth, (req, res) => {
   const channelId = parseInt(req.params.channelId, 10);
-  const channel = mockChannels.find(c => c.id === channelId);
+  const channel = channels.find(c => c.id === channelId);
 
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
@@ -591,16 +593,16 @@ app.get('/api/channels/:channelId/messages', checkAuth, (req, res) => {
     return res.status(403).json({ message: 'You do not have access to this channel' });
   }
 
-  const messagesInChannel = mockMessages.filter(m => m.channelId === channelId);
+  const messagesInChannel = messages.filter(m => m.channelId === channelId);
   console.log(`User ${req.user.email} requested messages for channel ${channelId}`);
   res.status(200).json(messagesInChannel);
 });
 
 // POST /api/channels/:channelId/messages - Post a message to a channel (requires auth)
-app.post('/api/channels/:channelId/messages', checkAuth, (req, res) => {
+app.post('/api/channels/:channelId/messages', checkAuth, async (req, res) => {
   const channelId = parseInt(req.params.channelId, 10);
   const { text } = req.body;
-  const channel = mockChannels.find(c => c.id === channelId);
+  const channel = channels.find(c => c.id === channelId);
 
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
@@ -615,23 +617,24 @@ app.post('/api/channels/:channelId/messages', checkAuth, (req, res) => {
   }
 
   const newMessage = {
-    id: nextMessageId++,
+    id: await getNextId('messages'),
     channelId,
     userId: req.user.id,
     userName: req.user.email, // Use email as name for mock simplicity
     text,
     timestamp: new Date().toISOString()
   };
-  mockMessages.push(newMessage);
+  messages.push(newMessage);
+  await saveData('messages', messages);
+  
   console.log(`User ${req.user.email} posted message to channel ${channelId}:`, newMessage);
-  console.log('Current Mock Messages:', mockMessages);
 
   // In a real app, you might broadcast this message via WebSockets
   res.status(201).json(newMessage);
 });
 
 // PUT /api/channels/:channelId/messages/:messageId - Edit a message (requires auth)
-app.put('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res) => {
+app.put('/api/channels/:channelId/messages/:messageId', checkAuth, async (req, res) => {
   const channelId = parseInt(req.params.channelId, 10);
   const messageId = parseInt(req.params.messageId, 10);
   const { text } = req.body;
@@ -640,7 +643,7 @@ app.put('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res) =>
     return res.status(400).json({ message: 'Message text is required' });
   }
   
-  const channel = mockChannels.find(c => c.id === channelId);
+  const channel = channels.find(c => c.id === channelId);
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
   }
@@ -650,12 +653,12 @@ app.put('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res) =>
     return res.status(403).json({ message: 'You do not have access to this channel' });
   }
   
-  const messageIndex = mockMessages.findIndex(m => m.id === messageId && m.channelId === channelId);
+  const messageIndex = messages.findIndex(m => m.id === messageId && m.channelId === channelId);
   if (messageIndex === -1) {
     return res.status(404).json({ message: 'Message not found' });
   }
   
-  const message = mockMessages[messageIndex];
+  const message = messages[messageIndex];
   
   // Only the message author or an admin can edit the message
   if (message.userId !== req.user.id && !req.user.roles.includes('Admin')) {
@@ -663,22 +666,24 @@ app.put('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res) =>
   }
   
   // Update the message
-  mockMessages[messageIndex] = {
+  messages[messageIndex] = {
     ...message,
     text,
     edited: true
   };
+
+  await saveData('messages', messages);
   
   console.log(`User ${req.user.email} edited message ${messageId} in channel ${channelId}`);
-  res.status(200).json(mockMessages[messageIndex]);
+  res.status(200).json(messages[messageIndex]);
 });
 
 // DELETE /api/channels/:channelId/messages/:messageId - Delete a message (requires auth)
-app.delete('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res) => {
+app.delete('/api/channels/:channelId/messages/:messageId', checkAuth, async (req, res) => {
   const channelId = parseInt(req.params.channelId, 10);
   const messageId = parseInt(req.params.messageId, 10);
   
-  const channel = mockChannels.find(c => c.id === channelId);
+  const channel = channels.find(c => c.id === channelId);
   if (!channel) {
     return res.status(404).json({ message: 'Channel not found' });
   }
@@ -688,12 +693,12 @@ app.delete('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res)
     return res.status(403).json({ message: 'You do not have access to this channel' });
   }
   
-  const messageIndex = mockMessages.findIndex(m => m.id === messageId && m.channelId === channelId);
+  const messageIndex = messages.findIndex(m => m.id === messageId && m.channelId === channelId);
   if (messageIndex === -1) {
     return res.status(404).json({ message: 'Message not found' });
   }
   
-  const message = mockMessages[messageIndex];
+  const message = messages[messageIndex];
   
   // Only the message author or an admin can delete the message
   if (message.userId !== req.user.id && !req.user.roles.includes('Admin')) {
@@ -701,7 +706,8 @@ app.delete('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res)
   }
   
   // Remove the message
-  const deletedMessage = mockMessages.splice(messageIndex, 1)[0];
+  const deletedMessage = messages.splice(messageIndex, 1)[0];
+  await saveData('messages', messages);
   
   console.log(`User ${req.user.email} deleted message ${messageId} from channel ${channelId}`);
   res.status(200).json({ message: 'Message deleted successfully', id: deletedMessage.id });
@@ -722,7 +728,7 @@ app.get('/api/grade/members', checkAuth, (req, res) => {
   if (req.user.roles.includes('Admin') || req.user.roles.includes('Tribe Leader')) {
     // Admins and tribe leaders can see all members, grouped by grade
     const membersByGrade = {};
-    mockMembers.forEach(member => {
+    members.forEach(member => {
       if (!membersByGrade[member.grade]) {
         membersByGrade[member.grade] = [];
       }
@@ -731,14 +737,14 @@ app.get('/api/grade/members', checkAuth, (req, res) => {
     gradeMembers = membersByGrade;
   } else {
     // Counselors can only see their grade's members
-    gradeMembers = mockMembers.filter(member => normalizeGrade(member.grade) === normalizeGrade(req.user.grade));
+    gradeMembers = members.filter(member => normalizeGrade(member.grade) === normalizeGrade(req.user.grade));
   }
 
   res.status(200).json(gradeMembers);
 });
 
 // POST /api/grade/members - Add a new member to counselor's grade
-app.post('/api/grade/members', checkAuth, (req, res) => {
+app.post('/api/grade/members', checkAuth, async (req, res) => {
   const { firstName, lastName, grade } = req.body;
 
   // Only counselors, admins, and tribe leaders can add members
@@ -760,7 +766,7 @@ app.post('/api/grade/members', checkAuth, (req, res) => {
   const currentYear = new Date().getFullYear().toString();
   
   const newMember = {
-    id: nextMemberId++,
+    id: await getNextId('members'),
     firstName,
     lastName: lastName || '',
     grade: memberGrade,
@@ -768,14 +774,16 @@ app.post('/api/grade/members', checkAuth, (req, res) => {
     initialGrade: memberGrade // Store initial grade for future grade advancement
   };
 
-  mockMembers.push(newMember);
+  members.push(newMember);
+  await saveData('members', members);
+  
   console.log(`User ${req.user.email} added new member:`, newMember);
 
   res.status(201).json(newMember);
 });
 
 // POST /api/members/advance-grades - Advance member grades based on registration year
-app.post('/api/members/advance-grades', checkAuth, (req, res) => {
+app.post('/api/members/advance-grades', checkAuth, async (req, res) => {
   // Only admins and tribe leaders can advance grades
   if (!req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
     return res.status(403).json({ message: 'Only admins and tribe leaders can advance grades' });
@@ -785,7 +793,7 @@ app.post('/api/members/advance-grades', checkAuth, (req, res) => {
   const updatedMembers = [];
   const errors = [];
 
-  mockMembers.forEach(member => {
+  members.forEach(member => {
     if (!member.registrationYear || !member.initialGrade) return;
 
     try {
@@ -807,6 +815,9 @@ app.post('/api/members/advance-grades', checkAuth, (req, res) => {
     }
   });
 
+  // Save changes to file
+  await saveData('members', members);
+
   console.log(`User ${req.user.email} advanced grades for ${updatedMembers.length} members`);
   
   res.status(200).json({
@@ -817,11 +828,11 @@ app.post('/api/members/advance-grades', checkAuth, (req, res) => {
 });
 
 // PUT /api/grade/members/:memberId - Update a member's information
-app.put('/api/grade/members/:memberId', checkAuth, (req, res) => {
+app.put('/api/grade/members/:memberId', checkAuth, async (req, res) => {
   const memberId = parseInt(req.params.memberId, 10);
   const { firstName, lastName } = req.body;
 
-  const member = mockMembers.find(m => m.id === memberId);
+  const member = members.find(m => m.id === memberId);
   if (!member) {
     return res.status(404).json({ message: 'Member not found' });
   }
@@ -839,20 +850,22 @@ app.put('/api/grade/members/:memberId', checkAuth, (req, res) => {
   member.firstName = firstName;
   member.lastName = lastName || '';
 
+  await saveData('members', members);
+
   console.log(`User ${req.user.email} updated member:`, member);
   res.status(200).json(member);
 });
 
 // DELETE /api/grade/members/:memberId - Remove a member
-app.delete('/api/grade/members/:memberId', checkAuth, (req, res) => {
+app.delete('/api/grade/members/:memberId', checkAuth, async (req, res) => {
   const memberId = parseInt(req.params.memberId, 10);
 
-  const memberIndex = mockMembers.findIndex(m => m.id === memberId);
+  const memberIndex = members.findIndex(m => m.id === memberId);
   if (memberIndex === -1) {
     return res.status(404).json({ message: 'Member not found' });
   }
 
-  const member = mockMembers[memberIndex];
+  const member = members[memberIndex];
 
   // Check if user has permission to delete this member
   if (req.user.roles.includes('Counselor') &&
@@ -860,7 +873,9 @@ app.delete('/api/grade/members/:memberId', checkAuth, (req, res) => {
     return res.status(403).json({ message: 'Access denied' });
   }
 
-  mockMembers.splice(memberIndex, 1);
+  members.splice(memberIndex, 1);
+  await saveData('members', members);
+  
   console.log(`User ${req.user.email} deleted member:`, member);
   res.status(200).json({ message: 'Member deleted successfully' });
 });
@@ -877,7 +892,7 @@ app.get('/api/members/search', checkAuth, (req, res) => {
     return res.status(403).json({ message: 'Access denied' });
   }
 
-  let filteredMembers = [...mockMembers];
+  let filteredMembers = [...members];
   
   // Filter by year if provided
   if (year) {
@@ -911,10 +926,10 @@ app.get('/api/members/search', checkAuth, (req, res) => {
 });
 
 // POST /api/members/transfer - Transfer members to new grades
-app.post('/api/members/transfer', checkAuth, (req, res) => {
-  const { members, newGrade, year } = req.body;
+app.post('/api/members/transfer', checkAuth, async (req, res) => {
+  const { members: memberIds, newGrade, year } = req.body;
 
-  if (!Array.isArray(members) || !newGrade) {
+  if (!Array.isArray(memberIds) || !newGrade) {
     return res.status(400).json({ message: 'Members array and new grade are required' });
   }
 
@@ -929,8 +944,8 @@ app.post('/api/members/transfer', checkAuth, (req, res) => {
   const updatedMembers = [];
   const errors = [];
   
-  members.forEach(memberId => {
-    const member = mockMembers.find(m => m.id === memberId);
+  memberIds.forEach(memberId => {
+    const member = members.find(m => m.id === memberId);
     if (member) {
       member.grade = newGrade;
       member.year = transferYear;
@@ -939,6 +954,9 @@ app.post('/api/members/transfer', checkAuth, (req, res) => {
       errors.push(`Member with ID ${memberId} not found`);
     }
   });
+
+  // Save changes to file
+  await saveData('members', members);
 
   console.log(`User ${req.user.email} transferred members to grade ${newGrade} for year ${transferYear}:`, updatedMembers);
   
@@ -957,10 +975,10 @@ app.get('/api/events', checkAuth, (req, res) => {
   
   if (req.user.roles.includes('Admin') || req.user.roles.includes('Tribe Leader')) {
     // Admins and tribe leaders can see all events
-    accessibleEvents = mockEvents;
+    accessibleEvents = events;
   } else {
     // Counselors can see global events and their grade's events
-    accessibleEvents = mockEvents.filter(event =>
+    accessibleEvents = events.filter(event =>
       event.type === 'global' ||
       (event.type === 'grade' && normalizeGrade(event.grade) === normalizeGrade(req.user.grade))
     );
@@ -970,7 +988,7 @@ app.get('/api/events', checkAuth, (req, res) => {
 });
 
 // POST /api/events - Create a new event
-app.post('/api/events', checkAuth, (req, res) => {
+app.post('/api/events', checkAuth, async (req, res) => {
   const { name, date, type, grade } = req.body;
 
   if (!name || !date || !type) {
@@ -996,7 +1014,7 @@ app.post('/api/events', checkAuth, (req, res) => {
   }
 
   const newEvent = {
-    id: nextEventId++,
+    id: await getNextId('events'),
     name,
     date,
     type,
@@ -1004,14 +1022,16 @@ app.post('/api/events', checkAuth, (req, res) => {
     createdBy: req.user.id
   };
 
-  mockEvents.push(newEvent);
+  events.push(newEvent);
+  await saveData('events', events);
+  
   console.log(`User ${req.user.email} created new event:`, newEvent);
 
   res.status(201).json(newEvent);
 });
 
 // POST /api/events/:eventId/attendance - Record attendance for an event
-app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
+app.post('/api/events/:eventId/attendance', checkAuth, async (req, res) => {
   const eventId = parseInt(req.params.eventId, 10);
   const { attendees } = req.body; // Array of member IDs who attended
 
@@ -1019,13 +1039,13 @@ app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
     return res.status(400).json({ message: 'Attendees must be an array of member IDs' });
   }
 
-  const event = mockEvents.find(e => e.id === eventId);
+  const event = events.find(e => e.id === eventId);
   if (!event) {
     return res.status(404).json({ message: 'Event not found' });
   }
 
   // Get members being marked for attendance
-  const attendingMembers = mockMembers.filter(m => attendees.includes(m.id));
+  const attendingMembers = members.filter(m => attendees.includes(m.id));
 
   // Verify members are from the correct grade
   if (event.type === 'grade') {
@@ -1034,7 +1054,7 @@ app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
       if (member.grade === 'operations') return false;
       // Allow Shachbag members (counselors and tribe leaders) to attend Shachbag events
       if (event.grade === 'shachbag') {
-        const user = mockUsers.find(u => u.email === member.email);
+        const user = users.find(u => u.email === member.email);
         return !user?.roles.some(role => ['Counselor', 'Tribe Leader'].includes(role));
       }
       // For regular grade events, members must match the event grade
@@ -1050,20 +1070,22 @@ app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
   }
 
   // Clear previous attendance records for this event
-  mockAttendance = mockAttendance.filter(a => a.eventId !== eventId);
+  attendance = attendance.filter(a => a.eventId !== eventId);
 
   // Record new attendance
   const newAttendance = attendees.map(memberId => {
-    const member = mockMembers.find(m => m.id === memberId);
+    const member = members.find(m => m.id === memberId);
     return {
       eventId,
       memberId,
       attended: true,
-      grade: member.grade
+      grade: member.grade,
+      timestamp: new Date().toISOString()
     };
   });
 
-  mockAttendance.push(...newAttendance);
+  attendance.push(...newAttendance);
+  await saveData('attendance', attendance);
 
   // Calculate attendance statistics
   const gradeAttendance = {};
@@ -1089,15 +1111,16 @@ app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
 });
 
 // GET /api/events/stats - Get attendance statistics
-app.get('/api/events/stats', checkAuth, (req, res) => {
+app.get('/api/events/stats', checkAuth, async (req, res) => {
   // Only admins and tribe leaders can view overall stats
   if (!req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
     return res.status(403).json({ message: 'Access denied' });
   }
 
-  const stats = mockEvents.map(event => {
-    const eventAttendance = mockAttendance.filter(a => a.eventId === event.id);
+  const stats = events.map(event => {
+    const eventAttendance = attendance.filter(a => a.eventId === event.id);
     const gradeAttendance = {};
+    let totalAttendees = 0;
 
     eventAttendance.forEach(record => {
       const grade = record.grade;
@@ -1105,6 +1128,7 @@ app.get('/api/events/stats', checkAuth, (req, res) => {
         gradeAttendance[grade] = 0;
       }
       gradeAttendance[grade]++;
+      totalAttendees++;
     });
 
     return {
@@ -1112,7 +1136,8 @@ app.get('/api/events/stats', checkAuth, (req, res) => {
       eventName: event.name,
       type: event.type,
       date: event.date,
-      gradeAttendance
+      gradeAttendance,
+      totalAttendees
     };
   });
 
