@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { AuthProvider } from './components/auth/AuthContext';
 import { useAuth } from './components/auth/AuthContext';
 
 // Navigation component with auth-aware links
@@ -17,7 +16,12 @@ const Navigation = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {user.email}
           </span>
-          <button 
+          {(user.role === 'Admin' || user.role === 'Scout Leader') && (
+            <Link href="/admin" className="text-blue-600 hover:underline text-sm mr-2">
+              Admin
+            </Link>
+          )}
+          <button
             onClick={logout}
             className="text-red-600 hover:underline text-sm"
           >
@@ -64,20 +68,20 @@ const HomePage = () => {
               ScoutsTribe
             </Link>
             <div className="hidden sm:flex space-x-4">
-              <Link 
-                href="/messaging" 
+              <Link
+                href="/messaging"
                 className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent hover:border-blue-600"
               >
                 Messaging
               </Link>
-              <Link 
-                href="/forms" 
+              <Link
+                href="/forms"
                 className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent"
               >
                 Forms
               </Link>
-              <Link 
-                href="/documents" 
+              <Link
+                href="/documents"
                 className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent"
               >
                 Documents
@@ -150,11 +154,6 @@ const HomePage = () => {
   );
 };
 
-// Wrap the HomePage with AuthProvider
 export default function Home() {
-  return (
-    <AuthProvider>
-      <HomePage />
-    </AuthProvider>
-  );
+  return <HomePage />;
 }

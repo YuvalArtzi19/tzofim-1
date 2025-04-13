@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useRouter } from 'next/navigation';
 
 const SignupForm = () => {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ const SignupForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   
   const { signup } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +32,8 @@ const SignupForm = () => {
     
     try {
       await signup(email, password);
-      // Signup successful - the AuthContext will update the user state and redirect
+      // Signup successful - redirect to home page
+      router.push('/');
     } catch (error: any) {
       setErrorMessage(error.response?.data?.message || 'Signup failed. Please try again.');
     } finally {

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import MessagingDashboard from '../components/messaging/MessagingDashboard';
-import Link from 'next/link';
+import UserManagement from '../components/admin/UserManagement';
 import { useAuth } from '../components/auth/AuthContext';
+import Link from 'next/link';
 
 // Navigation component with auth-aware links
 const Navigation = () => {
@@ -16,12 +16,7 @@ const Navigation = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {user.email}
           </span>
-          {(user.role === 'Admin' || user.role === 'Scout Leader') && (
-            <Link href="/admin" className="text-blue-600 hover:underline text-sm mr-2">
-              Admin
-            </Link>
-          )}
-          <button
+          <button 
             onClick={logout}
             className="text-red-600 hover:underline text-sm"
           >
@@ -42,7 +37,7 @@ const Navigation = () => {
   );
 };
 
-export default function MessagingPage() {
+export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col">
         <header className="bg-white dark:bg-gray-800 shadow">
@@ -52,23 +47,29 @@ export default function MessagingPage() {
                 ScoutsTribe
               </Link>
               <div className="hidden sm:flex space-x-4">
-                <Link
-                  href="/messaging"
-                  className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1"
+                <Link 
+                  href="/messaging" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent"
                 >
                   Messaging
                 </Link>
-                <Link
-                  href="/forms"
+                <Link 
+                  href="/forms" 
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent"
                 >
                   Forms
                 </Link>
-                <Link
-                  href="/documents"
+                <Link 
+                  href="/documents" 
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent"
                 >
                   Documents
+                </Link>
+                <Link 
+                  href="/admin" 
+                  className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1"
+                >
+                  Admin
                 </Link>
               </div>
             </div>
@@ -76,9 +77,10 @@ export default function MessagingPage() {
           </div>
         </header>
         
-        <main className="flex-grow flex">
-          <div className="w-full h-full max-w-7xl mx-auto">
-            <MessagingDashboard />
+        <main className="flex-grow p-6">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+            <UserManagement />
           </div>
         </main>
         

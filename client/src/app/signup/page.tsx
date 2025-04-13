@@ -2,13 +2,11 @@
 
 import React from 'react';
 import SignupForm from '../components/auth/SignupForm';
-import { AuthProvider } from '../components/auth/AuthContext';
 import Link from 'next/link';
 
 export default function SignupPage() {
   return (
-    <AuthProvider>
-      <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
         <header className="bg-white dark:bg-gray-800 shadow">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <Link href="/" className="text-xl font-bold">
@@ -33,7 +31,6 @@ export default function SignupPage() {
             &copy; {new Date().getFullYear()} ScoutsTribe. All rights reserved.
           </div>
         </footer>
-      </div>
-    </AuthProvider>
+    </div>
   );
 }

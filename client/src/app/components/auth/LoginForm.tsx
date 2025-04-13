@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
+import { useRouter } from 'next/navigation';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ const LoginForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   
   const { login } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +26,8 @@ const LoginForm = () => {
     
     try {
       await login(email, password);
-      // Login successful - the AuthContext will update the user state
+      // Login successful - redirect to home page
+      router.push('/');
     } catch (error: any) {
       setErrorMessage(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
