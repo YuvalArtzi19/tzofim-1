@@ -53,11 +53,14 @@
 2.  Commit documentation updates (`activeContext`, `progress`) and frontend implementation to Git.
 3.  Test the frontend application by running the client and server together.
 4.  *CORS handling implemented in the backend.*
-5.  Continue implementing additional core features from the MVP scope (e.g., forms, document upload).
-6.  Revisit database decision when ready to move beyond mock data.
-7.  Address the Git push connection issue when possible.
+5.  Fix issues with signup and login functionality in the frontend.
+6.  Continue implementing additional core features from the MVP scope (e.g., forms, document upload).
+7.  Revisit database decision when ready to move beyond mock data.
+8.  Address the Git push connection issue when possible.
 
 ## 🤔 Active Decisions & Considerations
+
+- **Known Issues:** Signup and login functionality for newly signed-up users is not working correctly. This needs to be investigated and fixed in the next task.
 
 - **Technology Choices:** Database choice deferred. Proceeding with mock data for authentication. Still using React/Next.js and Node.js/Express as planned.
 - **Directory Structure:** Deciding on the optimal monorepo or separate repo structure. Starting with a simple top-level `client` and `server` directory structure within this workspace.
