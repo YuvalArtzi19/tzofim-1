@@ -7,7 +7,6 @@ const SignupForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('Counselor'); // Default role
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   
@@ -30,7 +29,7 @@ const SignupForm = () => {
     setErrorMessage('');
     
     try {
-      await signup(email, password, role);
+      await signup(email, password);
       // Signup successful - the AuthContext will update the user state and redirect
     } catch (error: any) {
       setErrorMessage(error.response?.data?.message || 'Signup failed. Please try again.');
@@ -97,22 +96,9 @@ const SignupForm = () => {
             required
           />
         </div>
-        
-        <div className="mb-6">
-          <label htmlFor="role" className="block text-sm font-medium mb-1">
-            Role
-          </label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
-          >
-            <option value="Counselor">Counselor</option>
-            <option value="Grade Manager">Grade Manager</option>
-            <option value="Scout Leader">Scout Leader</option>
-          </select>
+        <div className="mb-6 text-sm text-gray-600">
+          <p>All new accounts are created with the Counselor role by default.</p>
+          <p>Scout Leaders can assign different roles after your account is approved.</p>
         </div>
         
         <button
