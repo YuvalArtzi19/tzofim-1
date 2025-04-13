@@ -47,16 +47,16 @@ export default function RootLayout({
                       Messaging
                     </Link>
                     <Link
-                      href="/forms"
+                      href="/events"
                       className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent hover:border-blue-600"
                     >
-                      Forms
+                      Events
                     </Link>
                     <Link
-                      href="/documents"
+                      href="/members"
                       className="text-gray-600 dark:text-gray-300 hover:text-blue-600 pb-1 border-b-2 border-transparent hover:border-blue-600"
                     >
-                      Documents
+                      Members
                     </Link>
                   </div>
                 </div>
