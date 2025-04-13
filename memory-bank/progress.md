@@ -1,4 +1,4 @@
-# Progress: ScoutsTribe - Project Setup Complete
+# Progress: ScoutsTribe - Basic Server & Auth Placeholders
 
 ## ✅ What Works
 
@@ -9,7 +9,7 @@
     - Basic `package.json` initialized.
     - Express installed.
     - `nodemon` installed and `npm run dev` script added.
-    - Basic `server/server.js` created.
+    - Basic `server/server.js` created with placeholder auth routes (`/api/auth/...`).
 - **Client Setup:** Basic Next.js project initialized in `client/`.
 
 ## 🏗️ What's Left to Build (MVP Scope)
@@ -18,7 +18,7 @@
     - *Basic server setup complete.*
     - Basic frontend setup (Verify Next.js runs).
 - **Features:**
-    - Role-based login system (Users: Scout Leader, Grade Manager, Counselor).
+    - Role-based login system (Users: Scout Leader, Grade Manager, Counselor) - *Backend placeholders added*.
     - Group assignment interface (Admin functionality).
     - Grade-based messaging channels.
     - Message search functionality.
@@ -31,12 +31,12 @@
     - Year switcher mechanism (frontend).
     - Archive viewer for past years' data (read-only).
     - Database schema design and implementation.
-    - API endpoints for all features.
+    - API endpoints for all features - *Auth placeholders added*.
     - Frontend UI components for all features.
 
 ## 🚦 Current Status
 
-- **Phase:** Core Feature Development (Starting).
+- **Phase:** Backend Setup / Authentication Foundation.
 - **Blockers:** None locally. Git push pending resolution of connection issue.
 
 ## ❗ Known Issues
