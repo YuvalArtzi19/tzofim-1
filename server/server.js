@@ -15,6 +15,54 @@ app.get('/', (req, res) => {
   res.send('ScoutsTribe Server is running!');
 });
 
+// --- Mock RBAC Middleware ---
+
+// Middleware to check for a valid mock token and attach user to request
+const checkAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized: Missing or invalid token format' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  // Extremely basic mock token parsing: "fake-jwt-token-for-user-<id>"
+  const match = token.match(/^fake-jwt-token-for-user-(\d+)$/);
+
+  if (!match) {
+    return res.status(401).json({ message: 'Unauthorized: Invalid token content' });
+  }
+
+  const userId = parseInt(match[1], 10);
+  const user = mockUsers.find(u => u.id === userId);
+
+  if (!user) {
+    return res.status(401).json({ message: 'Unauthorized: User not found for token' });
+  }
+
+  // Attach user to request object (excluding password)
+  req.user = { id: user.id, email: user.email, role: user.role };
+  next(); // Proceed to the next middleware or route handler
+};
+
+// Middleware factory to check if the authenticated user has one of the allowed roles
+const checkRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      // Should have been caught by checkAuth, but good practice to check
+      return res.status(401).json({ message: 'Unauthorized: No user authenticated' });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: `Forbidden: User role (${req.user.role}) not authorized` });
+    }
+
+    next(); // User has the required role
+  };
+};
+
+// --- End Mock RBAC Middleware ---
+
 // --- Authentication Routes (Using Mock Data) ---
 
 // POST /api/auth/signup
@@ -83,6 +131,22 @@ app.post('/api/auth/logout', (req, res) => {
 
 // --- End Authentication Routes ---
 
+// --- Sample Protected Route ---
+
+// Example: Get all users (requires Admin or Scout Leader role)
+app.get(
+  '/api/admin/users',
+  checkAuth, // First, ensure user is authenticated
+  checkRole(['Admin', 'Scout Leader']), // Then, check if user has the required role
+  (req, res) => {
+    console.log(`User ${req.user.email} (Role: ${req.user.role}) accessed /api/admin/users`);
+    // Return users without passwords
+    const usersForAdmin = mockUsers.map(u => ({ id: u.id, email: u.email, role: u.role }));
+    res.status(200).json(usersForAdmin);
+  }
+);
+
+// --- End Sample Protected Route ---
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });

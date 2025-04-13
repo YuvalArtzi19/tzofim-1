@@ -1,4 +1,4 @@
-# Progress: ScoutsTribe - Mock Authentication Implemented
+# Progress: ScoutsTribe - Mock Auth & RBAC Implemented
 
 ## ✅ What Works
 
@@ -9,7 +9,7 @@
     - Basic `package.json` initialized.
     - Express installed.
     - `nodemon` installed and `npm run dev` script added.
-    - Basic `server/server.js` created with mock auth logic (signup, login, logout) using in-memory data.
+    - Basic `server/server.js` created with mock auth logic (signup, login, logout) and mock RBAC middleware (`checkAuth`, `checkRole`) using in-memory data. Added sample protected route.
 - **Client Setup:** Basic Next.js project initialized in `client/`.
 
 ## 🏗️ What's Left to Build (MVP Scope)
@@ -18,7 +18,7 @@
     - *Basic server setup complete.*
     - Basic frontend setup (Verify Next.js runs).
 - **Features:**
-    - Role-based login system (Users: Scout Leader, Grade Manager, Counselor) - *Backend mock logic implemented*.
+    - Role-based login system (Users: Scout Leader, Grade Manager, Counselor) - *Backend mock auth & RBAC logic implemented*.
     - Group assignment interface (Admin functionality).
     - Grade-based messaging channels.
     - Message search functionality.
@@ -36,7 +36,7 @@
 
 ## 🚦 Current Status
 
-- **Phase:** Mock Authentication Implementation.
+- **Phase:** Mock Auth & RBAC Implementation.
 - **Blockers:** None locally. Git push pending resolution of connection issue.
 
 ## ❗ Known Issues
