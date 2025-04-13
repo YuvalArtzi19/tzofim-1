@@ -137,4 +137,81 @@ export const userAPI = {
   }
 };
 
+// Member management API calls
+export const memberAPI = {
+  getMembers: async () => {
+    const response = await api.get('/api/grade/members');
+    return response.data;
+  },
+
+  addMember: async (firstName: string, lastName?: string, year?: string) => {
+    const response = await api.post('/api/grade/members', {
+      firstName,
+      lastName,
+      year: year || new Date().getFullYear().toString()
+    });
+    return response.data;
+  },
+
+  updateMember: async (memberId: number, firstName: string, lastName?: string) => {
+    const response = await api.put(`/api/grade/members/${memberId}`, { firstName, lastName });
+    return response.data;
+  },
+
+  deleteMember: async (memberId: number) => {
+    const response = await api.delete(`/api/grade/members/${memberId}`);
+    return response.data;
+  },
+
+  searchMembers: async (params: { query?: string; year?: string; grade?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params.query) searchParams.append('query', params.query);
+    if (params.year) searchParams.append('year', params.year);
+    if (params.grade) searchParams.append('grade', params.grade);
+    
+    const response = await api.get(`/api/members/search?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  transferMembers: async (members: number[], newGrade: string, year?: string) => {
+    const response = await api.post('/api/members/transfer', {
+      members,
+      newGrade,
+      year: year || new Date().getFullYear().toString()
+    });
+    return response.data;
+  }
+};
+
+// Grade advancement API call
+export const gradeAPI = {
+  advanceGrades: async () => {
+    const response = await api.post('/api/members/advance-grades');
+    return response.data;
+  }
+};
+
+// Event management API calls
+export const eventAPI = {
+  getEvents: async () => {
+    const response = await api.get('/api/events');
+    return response.data;
+  },
+
+  createEvent: async (name: string, date: string, type: 'global' | 'grade', grade?: string) => {
+    const response = await api.post('/api/events', { name, date, type, grade });
+    return response.data;
+  },
+
+  recordAttendance: async (eventId: number, attendees: number[]) => {
+    const response = await api.post(`/api/events/${eventId}/attendance`, { attendees });
+    return response.data;
+  },
+
+  getEventStats: async () => {
+    const response = await api.get('/api/events/stats');
+    return response.data;
+  }
+};
+
 export default api;

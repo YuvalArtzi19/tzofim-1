@@ -46,6 +46,15 @@ const mockChannels = []; // Stores { id, name, grade }
 let nextChannelId = 1;
 const mockMessages = []; // Stores { id, channelId, userId, userName, text, timestamp }
 let nextMessageId = 1;
+
+// Member and event management data structures
+const mockMembers = []; // Stores { id, firstName, lastName, grade, year }
+let nextMemberId = 1;
+
+const mockEvents = []; // Stores { id, name, date, type: 'global'|'grade', grade?, createdBy }
+let nextEventId = 1;
+
+let mockAttendance = []; // Stores { eventId, memberId, attended, grade, year }
 // --- End Mock Data Store ---
 
 // Basic route for testing
@@ -121,12 +130,15 @@ app.post('/api/auth/signup', (req, res) => {
   }
 
   // TODO: Implement proper password hashing here! Storing plain text is insecure.
+  // Normalize and format grade consistently
+  const formattedGrade = grade ? normalizeGrade(grade) : '';
+  
   const newUser = {
     id: nextUserId++,
     email,
     password: password, // Storing plain text for mock purposes ONLY
     roles: roles || ['Counselor'], // Default role if not provided
-    grade: grade || '' // Default empty grade if not provided
+    grade: formattedGrade // Store normalized grade
   };
   mockUsers.push(newUser);
 
@@ -341,10 +353,13 @@ app.put(
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Update user grade
-    userToUpdate.grade = grade;
+    // Normalize grade format
+    const normalizedGrade = normalizeGrade(grade);
     
-    console.log(`User ${req.user.email} updated grade for user ${userToUpdate.email} to ${grade}`);
+    // Update user grade
+    userToUpdate.grade = normalizedGrade;
+    
+    console.log(`User ${req.user.email} updated grade for user ${userToUpdate.email} to ${normalizedGrade}`);
     
     res.status(200).json({
       message: 'User grade updated successfully',
@@ -511,17 +526,24 @@ app.post(
       return res.status(403).json({ message: 'You do not have permission to create channels' });
     }
     
+    // Normalize grades for comparison
+    const normalizedRequestGrade = normalizeGrade(grade);
+    const normalizedUserGrade = normalizeGrade(req.user.grade);
+    
     // If counselor, check if they're creating a channel for their grade
-    if (isCounselor && !isAdmin && !isTribeLeader && req.user.grade !== grade) {
+    if (isCounselor && !isAdmin && !isTribeLeader && normalizedUserGrade !== normalizedRequestGrade) {
       return res.status(403).json({
         message: `Counselors can only create channels for their assigned grade (${req.user.grade})`
       });
     }
 
+    // Store grade in a consistent format: number + "th" (e.g., "7th")
+    const formattedGrade = normalizedRequestGrade + 'th';
+    
     const newChannel = {
       id: nextChannelId++,
       name,
-      grade
+      grade: formattedGrade
     };
     mockChannels.push(newChannel);
     console.log(`User ${req.user.email} created channel:`, newChannel);
@@ -530,6 +552,13 @@ app.post(
   }
 );
 
+// Helper function to normalize grade format (e.g., "7" and "7th" are treated the same)
+const normalizeGrade = (grade) => {
+  if (!grade) return '';
+  // Remove any non-digit characters and trim
+  return grade.replace(/[^\d]/g, '').trim();
+};
+
 // Helper function to check if user can access a channel
 const canAccessChannel = (user, channel) => {
   // Admins and Tribe Leaders can access all channels
@@ -537,9 +566,12 @@ const canAccessChannel = (user, channel) => {
     return true;
   }
   
-  // Counselors can only access channels for their assigned grade
+  // Counselors can access channels for their assigned grade
   if (user.roles.includes('Counselor')) {
-    return user.grade === channel.grade;
+    // Allow access if the channel grade matches the counselor's assigned grade
+    const normalizedUserGrade = normalizeGrade(user.grade);
+    const normalizedChannelGrade = normalizeGrade(channel.grade);
+    return normalizedUserGrade === normalizedChannelGrade;
   }
   
   return false;
@@ -676,6 +708,418 @@ app.delete('/api/channels/:channelId/messages/:messageId', checkAuth, (req, res)
 });
 
 // --- End Messaging Channel Routes ---
+
+// --- Member Management Routes ---
+
+// GET /api/grade/members - Get members for counselor's grade
+app.get('/api/grade/members', checkAuth, (req, res) => {
+  // Only counselors, admins, and tribe leaders can access members
+  if (!req.user.roles.some(role => ['Counselor', 'Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  let gradeMembers;
+  if (req.user.roles.includes('Admin') || req.user.roles.includes('Tribe Leader')) {
+    // Admins and tribe leaders can see all members, grouped by grade
+    const membersByGrade = {};
+    mockMembers.forEach(member => {
+      if (!membersByGrade[member.grade]) {
+        membersByGrade[member.grade] = [];
+      }
+      membersByGrade[member.grade].push(member);
+    });
+    gradeMembers = membersByGrade;
+  } else {
+    // Counselors can only see their grade's members
+    gradeMembers = mockMembers.filter(member => normalizeGrade(member.grade) === normalizeGrade(req.user.grade));
+  }
+
+  res.status(200).json(gradeMembers);
+});
+
+// POST /api/grade/members - Add a new member to counselor's grade
+app.post('/api/grade/members', checkAuth, (req, res) => {
+  const { firstName, lastName, grade } = req.body;
+
+  // Only counselors, admins, and tribe leaders can add members
+  if (!req.user.roles.some(role => ['Counselor', 'Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  if (!firstName) {
+    return res.status(400).json({ message: 'First name is required' });
+  }
+
+  // For counselors, enforce using their assigned grade
+  const memberGrade = req.user.roles.includes('Counselor') ? req.user.grade : grade;
+  
+  if (!memberGrade) {
+    return res.status(400).json({ message: 'Grade is required' });
+  }
+
+  const currentYear = new Date().getFullYear().toString();
+  
+  const newMember = {
+    id: nextMemberId++,
+    firstName,
+    lastName: lastName || '',
+    grade: memberGrade,
+    registrationYear: currentYear,
+    initialGrade: memberGrade // Store initial grade for future grade advancement
+  };
+
+  mockMembers.push(newMember);
+  console.log(`User ${req.user.email} added new member:`, newMember);
+
+  res.status(201).json(newMember);
+});
+
+// POST /api/members/advance-grades - Advance member grades based on registration year
+app.post('/api/members/advance-grades', checkAuth, (req, res) => {
+  // Only admins and tribe leaders can advance grades
+  if (!req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Only admins and tribe leaders can advance grades' });
+  }
+
+  const currentYear = new Date().getFullYear().toString();
+  const updatedMembers = [];
+  const errors = [];
+
+  mockMembers.forEach(member => {
+    if (!member.registrationYear || !member.initialGrade) return;
+
+    try {
+      // Calculate years passed since registration
+      const yearsPassed = parseInt(currentYear) - parseInt(member.registrationYear);
+      const initialGradeNum = parseInt(normalizeGrade(member.initialGrade));
+      
+      if (isNaN(yearsPassed) || isNaN(initialGradeNum)) {
+        errors.push(`Invalid grade or year format for member ${member.id}`);
+        return;
+      }
+
+      // Advance grade by years passed
+      const newGrade = (initialGradeNum + yearsPassed).toString();
+      member.grade = newGrade;
+      updatedMembers.push(member);
+    } catch (err) {
+      errors.push(`Failed to advance grade for member ${member.id}: ${err.message}`);
+    }
+  });
+
+  console.log(`User ${req.user.email} advanced grades for ${updatedMembers.length} members`);
+  
+  res.status(200).json({
+    message: 'Grades advanced successfully',
+    updatedMembers,
+    errors: errors.length > 0 ? errors : undefined
+  });
+});
+
+// PUT /api/grade/members/:memberId - Update a member's information
+app.put('/api/grade/members/:memberId', checkAuth, (req, res) => {
+  const memberId = parseInt(req.params.memberId, 10);
+  const { firstName, lastName } = req.body;
+
+  const member = mockMembers.find(m => m.id === memberId);
+  if (!member) {
+    return res.status(404).json({ message: 'Member not found' });
+  }
+
+  // Check if user has permission to modify this member
+  if (req.user.roles.includes('Counselor') &&
+      normalizeGrade(member.grade) !== normalizeGrade(req.user.grade)) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  if (!firstName) {
+    return res.status(400).json({ message: 'First name is required' });
+  }
+
+  member.firstName = firstName;
+  member.lastName = lastName || '';
+
+  console.log(`User ${req.user.email} updated member:`, member);
+  res.status(200).json(member);
+});
+
+// DELETE /api/grade/members/:memberId - Remove a member
+app.delete('/api/grade/members/:memberId', checkAuth, (req, res) => {
+  const memberId = parseInt(req.params.memberId, 10);
+
+  const memberIndex = mockMembers.findIndex(m => m.id === memberId);
+  if (memberIndex === -1) {
+    return res.status(404).json({ message: 'Member not found' });
+  }
+
+  const member = mockMembers[memberIndex];
+
+  // Check if user has permission to delete this member
+  if (req.user.roles.includes('Counselor') &&
+      normalizeGrade(member.grade) !== normalizeGrade(req.user.grade)) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  mockMembers.splice(memberIndex, 1);
+  console.log(`User ${req.user.email} deleted member:`, member);
+  res.status(200).json({ message: 'Member deleted successfully' });
+});
+
+// --- End Member Management Routes ---
+
+// --- Member Search and Transfer Routes ---
+
+// GET /api/members/search - Search members across all grades and years
+app.get('/api/members/search', checkAuth, (req, res) => {
+  const { query, year, grade } = req.query;
+  
+  if (!req.user.roles.some(role => ['Counselor', 'Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  let filteredMembers = [...mockMembers];
+  
+  // Filter by year if provided
+  if (year) {
+    filteredMembers = filteredMembers.filter(member => member.year === year);
+  }
+
+  // Filter by grade if provided
+  if (grade) {
+    filteredMembers = filteredMembers.filter(member =>
+      normalizeGrade(member.grade) === normalizeGrade(grade)
+    );
+  }
+
+  // Filter by search query if provided
+  if (query) {
+    const searchQuery = query.toLowerCase();
+    filteredMembers = filteredMembers.filter(member =>
+      member.firstName.toLowerCase().includes(searchQuery) ||
+      member.lastName.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  // For counselors, only return members from their grade
+  if (req.user.roles.includes('Counselor') && !req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
+    filteredMembers = filteredMembers.filter(member =>
+      normalizeGrade(member.grade) === normalizeGrade(req.user.grade)
+    );
+  }
+
+  res.status(200).json(filteredMembers);
+});
+
+// POST /api/members/transfer - Transfer members to new grades
+app.post('/api/members/transfer', checkAuth, (req, res) => {
+  const { members, newGrade, year } = req.body;
+
+  if (!Array.isArray(members) || !newGrade) {
+    return res.status(400).json({ message: 'Members array and new grade are required' });
+  }
+
+  // Only admins and tribe leaders can transfer members
+  if (!req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Only admins and tribe leaders can transfer members' });
+  }
+
+  const currentYear = new Date().getFullYear().toString();
+  const transferYear = year || currentYear;
+
+  const updatedMembers = [];
+  const errors = [];
+  
+  members.forEach(memberId => {
+    const member = mockMembers.find(m => m.id === memberId);
+    if (member) {
+      member.grade = newGrade;
+      member.year = transferYear;
+      updatedMembers.push(member);
+    } else {
+      errors.push(`Member with ID ${memberId} not found`);
+    }
+  });
+
+  console.log(`User ${req.user.email} transferred members to grade ${newGrade} for year ${transferYear}:`, updatedMembers);
+  
+  res.status(200).json({
+    message: 'Members transferred successfully',
+    updatedMembers,
+    errors: errors.length > 0 ? errors : undefined
+  });
+});
+
+// --- Event Management Routes ---
+
+// GET /api/events - Get events (filtered by grade for counselors)
+app.get('/api/events', checkAuth, (req, res) => {
+  let accessibleEvents;
+  
+  if (req.user.roles.includes('Admin') || req.user.roles.includes('Tribe Leader')) {
+    // Admins and tribe leaders can see all events
+    accessibleEvents = mockEvents;
+  } else {
+    // Counselors can see global events and their grade's events
+    accessibleEvents = mockEvents.filter(event =>
+      event.type === 'global' ||
+      (event.type === 'grade' && normalizeGrade(event.grade) === normalizeGrade(req.user.grade))
+    );
+  }
+
+  res.status(200).json(accessibleEvents);
+});
+
+// POST /api/events - Create a new event
+app.post('/api/events', checkAuth, (req, res) => {
+  const { name, date, type, grade } = req.body;
+
+  if (!name || !date || !type) {
+    return res.status(400).json({ message: 'Name, date, and type are required' });
+  }
+
+  // Validate event type permissions
+  if (type === 'global' &&
+      !req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Only admins and tribe leaders can create global events' });
+  }
+
+  if (type === 'grade') {
+    if (!grade) {
+      return res.status(400).json({ message: 'Grade is required for grade events' });
+    }
+
+    // For grade events, counselors can only create for their grade
+    if (req.user.roles.includes('Counselor') &&
+        normalizeGrade(grade) !== normalizeGrade(req.user.grade)) {
+      return res.status(403).json({ message: 'Counselors can only create events for their grade' });
+    }
+  }
+
+  const newEvent = {
+    id: nextEventId++,
+    name,
+    date,
+    type,
+    grade: type === 'grade' ? grade : null,
+    createdBy: req.user.id
+  };
+
+  mockEvents.push(newEvent);
+  console.log(`User ${req.user.email} created new event:`, newEvent);
+
+  res.status(201).json(newEvent);
+});
+
+// POST /api/events/:eventId/attendance - Record attendance for an event
+app.post('/api/events/:eventId/attendance', checkAuth, (req, res) => {
+  const eventId = parseInt(req.params.eventId, 10);
+  const { attendees } = req.body; // Array of member IDs who attended
+
+  if (!Array.isArray(attendees)) {
+    return res.status(400).json({ message: 'Attendees must be an array of member IDs' });
+  }
+
+  const event = mockEvents.find(e => e.id === eventId);
+  if (!event) {
+    return res.status(404).json({ message: 'Event not found' });
+  }
+
+  // Get members being marked for attendance
+  const attendingMembers = mockMembers.filter(m => attendees.includes(m.id));
+
+  // Verify members are from the correct grade
+  if (event.type === 'grade') {
+    const invalidMembers = attendingMembers.filter(member => {
+      // Allow operations grade (admin) to attend any event
+      if (member.grade === 'operations') return false;
+      // Allow Shachbag members (counselors and tribe leaders) to attend Shachbag events
+      if (event.grade === 'shachbag') {
+        const user = mockUsers.find(u => u.email === member.email);
+        return !user?.roles.some(role => ['Counselor', 'Tribe Leader'].includes(role));
+      }
+      // For regular grade events, members must match the event grade
+      return normalizeGrade(member.grade) !== normalizeGrade(event.grade);
+    });
+
+    if (invalidMembers.length > 0) {
+      return res.status(400).json({
+        message: 'Some members cannot attend this event due to grade mismatch',
+        invalidMembers: invalidMembers.map(m => `${m.firstName} ${m.lastName} (Grade ${m.grade})`)
+      });
+    }
+  }
+
+  // Clear previous attendance records for this event
+  mockAttendance = mockAttendance.filter(a => a.eventId !== eventId);
+
+  // Record new attendance
+  const newAttendance = attendees.map(memberId => {
+    const member = mockMembers.find(m => m.id === memberId);
+    return {
+      eventId,
+      memberId,
+      attended: true,
+      grade: member.grade
+    };
+  });
+
+  mockAttendance.push(...newAttendance);
+
+  // Calculate attendance statistics
+  const gradeAttendance = {};
+  let totalAttendees = 0;
+
+  newAttendance.forEach(record => {
+    if (!gradeAttendance[record.grade]) {
+      gradeAttendance[record.grade] = 0;
+    }
+    gradeAttendance[record.grade]++;
+    totalAttendees++;
+  });
+
+  const stats = {
+    eventId,
+    eventName: event.name,
+    gradeAttendance,
+    totalAttendees
+  };
+
+  console.log(`User ${req.user.email} recorded attendance for event ${eventId}:`, stats);
+  res.status(200).json(stats);
+});
+
+// GET /api/events/stats - Get attendance statistics
+app.get('/api/events/stats', checkAuth, (req, res) => {
+  // Only admins and tribe leaders can view overall stats
+  if (!req.user.roles.some(role => ['Admin', 'Tribe Leader'].includes(role))) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  const stats = mockEvents.map(event => {
+    const eventAttendance = mockAttendance.filter(a => a.eventId === event.id);
+    const gradeAttendance = {};
+
+    eventAttendance.forEach(record => {
+      const grade = record.grade;
+      if (!gradeAttendance[grade]) {
+        gradeAttendance[grade] = 0;
+      }
+      gradeAttendance[grade]++;
+    });
+
+    return {
+      eventId: event.id,
+      eventName: event.name,
+      type: event.type,
+      date: event.date,
+      gradeAttendance
+    };
+  });
+
+  res.status(200).json(stats);
+});
+
+// --- End Event Management Routes ---
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);

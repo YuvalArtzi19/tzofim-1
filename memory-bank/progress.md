@@ -27,6 +27,11 @@
     - Added grade assignment for users.
     - Implemented role-based access control for channels and messages.
     - Fixed issues with user management modals.
+    - Implemented grade-based event attendance system.
+    - Added Shachbag group for counselors and tribe leaders.
+    - Added total attendance count in statistics.
+    - Fixed grade restrictions for event attendance.
+    - Fixed duplicate navigation in admin page.
 
 ## 🏗️ What's Left to Build (MVP Scope)
 

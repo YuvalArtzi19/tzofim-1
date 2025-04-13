@@ -11,8 +11,15 @@ ScoutsTribe is envisioned as a modern web application with a distinct frontend a
 - **Storage:** Cloud-based storage (AWS S3 or Firebase Storage) for handling document uploads.
 
 ## 🔑 Key Technical Decisions & Patterns
+- **Role-Based Access Control (RBAC):** Access to features and data will be strictly controlled based on user roles (Scout Leader, Grade Manager, Counselor, Admin). This will be implemented both on the frontend (UI visibility) and backend (API authorization). Special groups like Operations and Shachbag have specific access patterns.
 
-- **Role-Based Access Control (RBAC):** Access to features and data will be strictly controlled based on user roles (Scout Leader, Grade Manager, Counselor, Admin). This will be implemented both on the frontend (UI visibility) and backend (API authorization).
+- **Grade-Based Access Control:** Members are restricted to their assigned grade's events and channels, with special provisions:
+  * Regular members can only access their grade's content
+  * Operations grade members can access any grade's content
+  * Shachbag group (counselors and tribe leaders) has special access rights
+  * Grade validation enforced on both frontend and backend
+
+- **Year-Based Data Isolation:** The "Annual Group Transition Engine" requires a mechanism to partition or scope data (messages, forms, documents, assignments) by year. The active year's data is mutable, while previous years' data becomes read-only archives. This might involve database schema design (e.g., year columns, separate tables/collections per year) or application-level logic.
 - **Year-Based Data Isolation:** The "Annual Group Transition Engine" requires a mechanism to partition or scope data (messages, forms, documents, assignments) by year. The active year's data is mutable, while previous years' data becomes read-only archives. This might involve database schema design (e.g., year columns, separate tables/collections per year) or application-level logic.
 - **Component-Based UI:** The frontend will utilize a component-based architecture (inherent in React/Next.js) for reusability and maintainability.
 - **API-Driven:** The frontend will communicate with the backend via RESTful or GraphQL APIs.
