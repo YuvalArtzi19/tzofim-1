@@ -13,6 +13,7 @@
     - Implemented mock data structures for messaging channels and messages.
     - Created API endpoints for listing channels, creating channels, listing messages, and posting messages.
     - Protected routes with the RBAC middleware based on appropriate roles.
+    - Added CORS middleware to allow frontend API requests.
 - **Frontend Implementation:**
     - Created API service layer with axios for communication with the backend.
     - Implemented authentication components (AuthContext, LoginForm, SignupForm).
@@ -44,13 +45,14 @@
 - Implemented messaging components.
 - Created pages for login, signup, and messaging.
 - Updated the home page with navigation and information about ScoutsTribe.
+- Installed CORS package and implemented CORS middleware in the server.
 
 ## 🚀 Next Steps
 
 1.  Update `progress.md` to reflect the frontend implementation.
 2.  Commit documentation updates (`activeContext`, `progress`) and frontend implementation to Git.
 3.  Test the frontend application by running the client and server together.
-4.  Implement CORS handling in the backend to allow frontend API requests.
+4.  *CORS handling implemented in the backend.*
 5.  Continue implementing additional core features from the MVP scope (e.g., forms, document upload).
 6.  Revisit database decision when ready to move beyond mock data.
 7.  Address the Git push connection issue when possible.

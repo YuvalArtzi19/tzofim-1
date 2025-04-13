@@ -1,7 +1,16 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
 // Middleware to parse JSON bodies
+// Enable CORS for frontend requests
+app.use(cors({
+  origin: 'http://localhost:3000', // Frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Parse JSON request bodies
 app.use(express.json());
 const PORT = process.env.PORT || 3001; // Use port 3001 as a common alternative to 3000 (often used by client dev servers)
 

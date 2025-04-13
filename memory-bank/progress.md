@@ -1,4 +1,4 @@
-# Progress: ScoutsTribe - Frontend Components Implemented
+# Progress: ScoutsTribe - Frontend Components & CORS Implemented
 
 ## ✅ What Works
 
@@ -11,6 +11,7 @@
     - `nodemon` installed and `npm run dev` script added.
     - Basic `server/server.js` created with mock auth logic (signup, login, logout) and mock RBAC middleware (`checkAuth`, `checkRole`) using in-memory data.
     - Implemented messaging channels API endpoints with mock data structures.
+    - Added CORS middleware to allow frontend-backend communication.
 - **Client Setup:**
     - Basic Next.js project initialized in `client/`.
     - Axios installed for API communication.
@@ -47,5 +48,5 @@
 
 ## ❗ Known Issues
 - Git push to remote repository failed (connection timeout). Needs investigation (SSH keys/network).
-- CORS handling needed for frontend-backend communication.
+- *CORS handling implemented.*
 - Git push to remote repository failed (connection timeout). Needs investigation (SSH keys/network).
