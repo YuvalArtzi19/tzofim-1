@@ -8,16 +8,24 @@
 
 ## 📝 Recent Changes
 
-- Created initial versions of `productContext.md`, `systemPatterns.md`, and `techContext.md`.
-- This file (`activeContext.md`) was just created.
+- Initialized core Memory Bank files (`productContext.md`, `systemPatterns.md`, `techContext.md`, `activeContext.md`, `progress.md`).
+- Created `.gitignore` file.
+- Initialized Git repository.
+- Created `client/` and `server/` directories.
+- Initialized `package.json` in `server/` using `npm init -y`.
+- Initialized Next.js project in `client/` using `npx create-next-app`.
+- Attempted initial Git push (failed due to connection issue).
+- Corrected client project location (moved from `server/client` to `client/`).
 
 ## 🚀 Next Steps
 
-1.  Create the initial `progress.md` file.
-2.  Set up the basic project directory structure (e.g., `client/` for frontend, `server/` for backend).
-3.  Initialize `package.json` files for both client and server.
-4.  Define the initial database schema (high-level) based on MVP features.
-5.  Begin implementing the core features outlined in the MVP scope, starting with user roles and authentication.
+1.  Update `progress.md` to reflect project setup completion.
+2.  Commit documentation updates to Git.
+3.  Install necessary backend dependencies (e.g., Express) in `server/`.
+4.  Create a basic Express server structure in `server/`.
+5.  Define initial database schema (high-level) based on MVP features.
+6.  Start implementing user roles and authentication (backend first).
+7.  Address the Git push connection issue when possible.
 
 ## 🤔 Active Decisions & Considerations
 
