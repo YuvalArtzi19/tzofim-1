@@ -52,18 +52,18 @@ const MemberManagement: React.FC = () => {
       // For counselors, use their assigned grade
       const memberGrade = isCounselor ? user?.grade : selectedGrade;
       
-      if (!memberGrade) {
+      // Validate grade format
+      if (!memberGrade || memberGrade.trim() === '') {
         setError('Grade is required');
         return;
       }
 
-      // Validate grade format
-      if (!memberGrade.match(/^\d+$/)) {
+      const gradeNum = parseInt(memberGrade);
+      if (isNaN(gradeNum) || !memberGrade.match(/^\d+$/)) {
         setError('Grade must be a number');
         return;
       }
 
-      const gradeNum = parseInt(memberGrade);
       if (gradeNum < 1 || gradeNum > 12) {
         setError('Grade must be between 1 and 12');
         return;
@@ -209,8 +209,15 @@ const MemberManagement: React.FC = () => {
                     value={selectedGrade}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 12)) {
+                      const numValue = parseInt(value);
+                      if (value === '' || (!isNaN(numValue) && numValue >= 1 && numValue <= 12)) {
                         setSelectedGrade(value);
+                        setError(null);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (selectedGrade && !selectedGrade.match(/^([1-9]|1[0-2])$/)) {
+                        setError('Grade must be between 1 and 12');
                       }
                     }}
                     className="w-full p-2 border rounded"
