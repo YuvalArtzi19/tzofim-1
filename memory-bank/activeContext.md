@@ -1,4 +1,4 @@
-# Active Context: ScoutsTribe - Frontend Components Implemented
+# Active Context: ScoutsTribe - Authentication Fixed & Frontend Components Implemented
 
 ## 🎯 Current Focus
 
@@ -54,7 +54,7 @@
 3.  Test the frontend application by running the client and server together.
 4.  *CORS handling implemented in the backend.*
 5.  *Fixed syntax error in SignupForm.tsx (removed extra closing div tag).*
-5.  Fix issues with signup and login functionality in the frontend.
+6.  *Fixed authentication issues by implementing a global auth provider and adding redirection after login/signup.*
 6.  Continue implementing additional core features from the MVP scope (e.g., forms, document upload).
 7.  Revisit database decision when ready to move beyond mock data.
 8.  Address the Git push connection issue when possible.
@@ -62,8 +62,8 @@
 ## 🤔 Active Decisions & Considerations
 
 - **Known Issues:**
-  - Signup and login functionality for newly signed-up users is not working correctly. This needs to be investigated and fixed in the next task.
-  - Fixed a syntax error in SignupForm.tsx that was causing build failures (extra closing div tag).
+  - ~~Signup and login functionality for newly signed-up users is not working correctly.~~ *Fixed by implementing a global auth provider and adding redirection after login/signup.*
+  - ~~Fixed a syntax error in SignupForm.tsx that was causing build failures (extra closing div tag).~~ *Resolved.*
 
 - **Technology Choices:** Database choice deferred. Proceeding with mock data for authentication. Still using React/Next.js and Node.js/Express as planned.
 - **Directory Structure:** Deciding on the optimal monorepo or separate repo structure. Starting with a simple top-level `client` and `server` directory structure within this workspace.
