@@ -24,8 +24,9 @@ api.interceptors.request.use(
 
 // Authentication API calls
 export const authAPI = {
-  signup: async (email: string, password: string, role: string) => {
-    const response = await api.post('/api/auth/signup', { email, password, role });
+  signup: async (email: string, password: string) => {
+    // Default role is always 'Counselor' for new signups
+    const response = await api.post('/api/auth/signup', { email, password, role: 'Counselor' });
     return response.data;
   },
   

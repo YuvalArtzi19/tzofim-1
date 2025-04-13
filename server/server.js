@@ -15,8 +15,23 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001; // Use port 3001 as a common alternative to 3000 (often used by client dev servers)
 
 // --- Mock Data Store (Replace with actual DB later) ---
-const mockUsers = []; // Stores { id, email, password, role }
-let nextUserId = 1;
+const mockUsers = [
+  // Pre-defined admin user for testing
+  {
+    id: 1,
+    email: 'admin@scoutstribe.com',
+    password: 'admin123', // In a real app, this would be hashed
+    role: 'Admin'
+  },
+  // Pre-defined Scout Leader for testing
+  {
+    id: 2,
+    email: 'leader@scoutstribe.com',
+    password: 'leader123', // In a real app, this would be hashed
+    role: 'Scout Leader'
+  }
+];
+let nextUserId = 3; // Start after our pre-defined users
 const mockChannels = []; // Stores { id, name, grade }
 let nextChannelId = 1;
 const mockMessages = []; // Stores { id, channelId, userId, userName, text, timestamp }
