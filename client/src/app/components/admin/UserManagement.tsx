@@ -134,13 +134,13 @@ const GradeLeadershipCard: React.FC<GradeLeadershipCardProps> = ({
   };
 
   const renderUserList = (users: { id: number; email: string }[], roleToRemove: string) => (
-    <ul className="list-disc pl-5 mb-4 text-sm space-y-1">
+    <ul className="mb-4 text-sm space-y-2">
       {users.map(u => (
-        <li key={u.id} className="flex justify-between items-center group">
-          <span>{u.email}</span>
+        <li key={u.id} className="flex justify-between items-center group bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm">
+          <span className="font-medium">{u.email}</span>
           <button
             onClick={() => handleRemoveUser(u, roleToRemove)}
-            className="text-red-500 hover:text-red-700 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+            className="text-red-500 hover:text-red-700 text-xs opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 px-2 py-1 rounded"
             aria-label={`Remove ${u.email}`}
           >
             Remove
@@ -151,57 +151,82 @@ const GradeLeadershipCard: React.FC<GradeLeadershipCardProps> = ({
   );
 
   const renderAddUserSection = (roleToAdd: string, showStateSetter: React.Dispatch<React.SetStateAction<boolean>>) => (
-    <div className="mt-2 p-3 border rounded bg-gray-50 dark:bg-gray-700">
-       <input
-         type="text"
-         placeholder="Search user email..."
-         value={searchTerm}
-         onChange={(e) => setSearchTerm(e.target.value)}
-         className="w-full px-2 py-1 border rounded mb-2 text-sm"
-       />
+    <div className="mt-3 p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
+       <div className="flex gap-2 mb-3">
+         <input
+           type="text"
+           placeholder="Search user email..."
+           value={searchTerm}
+           onChange={(e) => setSearchTerm(e.target.value)}
+           className="flex-1 px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600"
+         />
+         <button
+           onClick={() => showStateSetter(false)}
+           className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md transition-colors"
+         >
+           Cancel
+         </button>
+       </div>
        {availableUsers.length > 0 ? (
-         <ul className="max-h-32 overflow-y-auto text-sm space-y-1">
+         <ul className="max-h-48 overflow-y-auto text-sm space-y-2">
            {availableUsers.map(u => (
              <li key={u.id}>
-               <button 
+               <button
                  onClick={() => handleAddUser(u, roleToAdd)}
-                 className="text-blue-600 hover:underline w-full text-left"
+                 className="w-full text-left p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                >
-                 {u.email} ({u.roles.join(', ') || 'No roles'} - Grade: {u.grade ? getGradeName(u.grade) : 'N/A'})
+                 <div className="font-medium text-blue-600 dark:text-blue-400">{u.email}</div>
+                 <div className="text-xs text-gray-500 dark:text-gray-400">
+                   {u.roles.join(', ') || 'No roles'} - Grade: {u.grade ? getGradeName(u.grade) : 'N/A'}
+                 </div>
                </button>
              </li>
            ))}
          </ul>
        ) : (
-         <p className="text-xs text-gray-500">No matching users found or all eligible users assigned.</p>
+         <p className="text-sm text-gray-500 dark:text-gray-400 italic">No matching users found or all eligible users assigned.</p>
        )}
-       <button onClick={() => showStateSetter(false)} className="text-xs text-gray-500 mt-2">Cancel</button>
     </div>
   );
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-sm bg-white dark:bg-gray-800">
-      <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 font-semibold text-lg">
-        {getGradeName(gradeId)}
+    <div className={`border rounded-lg overflow-hidden shadow-lg transition-all duration-200 ${
+      leadership.counselors.length === 0 ? 'bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700' :
+      leadership.counselors.length <= 2 ? 'bg-orange-50 dark:bg-orange-900 border-orange-200 dark:border-orange-700' :
+      'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
+    }`}>
+      <div className={`px-4 py-3 font-semibold text-lg flex justify-between items-center ${
+        leadership.counselors.length === 0 ? 'bg-red-100 dark:bg-red-800 text-red-900 dark:text-red-100' :
+        leadership.counselors.length <= 2 ? 'bg-orange-100 dark:bg-orange-800 text-orange-900 dark:text-orange-100' :
+        'bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-100'
+      }`}>
+        <span>{getGradeName(gradeId)}</span>
+        <span className={`text-sm font-medium px-2 py-1 rounded ${
+          leadership.counselors.length === 0 ? 'bg-red-200 dark:bg-red-700 text-red-900 dark:text-red-100' :
+          leadership.counselors.length <= 2 ? 'bg-orange-200 dark:bg-orange-700 text-orange-900 dark:text-orange-100' :
+          'bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-100'
+        }`}>
+          {leadership.counselors.length} counselor{leadership.counselors.length !== 1 ? 's' : ''}
+        </span>
       </div>
-      <div className="p-4">
+      <div className="p-5">
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
         
         {/* Tribe Leaders Section */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-medium">Tribe Leaders:</h4>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm mb-4">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-semibold text-lg">Tribe Leaders</h4>
             {canAssignTribeLeader && (
-              <button 
+              <button
                 onClick={() => { setShowAddLeader(true); setShowAddCounselor(false); setSearchTerm(''); }}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md transition-colors"
               >
                 + Add Leader
               </button>
             )}
           </div>
           {leadership.leads.length === 0 ? (
-            <p className="text-gray-500 text-sm mb-4">No tribe leaders assigned</p>
+            <p className="text-gray-500 text-sm mb-4 italic">No tribe leaders assigned</p>
           ) : (
             renderUserList(leadership.leads, ROLES.TRIBE_LEADER)
           )}
@@ -211,18 +236,18 @@ const GradeLeadershipCard: React.FC<GradeLeadershipCardProps> = ({
         <hr className="my-4 dark:border-gray-600"/>
 
         {/* Counselors Section */}
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="font-medium">Counselors:</h4>
-             <button 
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-semibold text-lg">Counselors</h4>
+             <button
                onClick={() => { setShowAddCounselor(true); setShowAddLeader(false); setSearchTerm(''); }}
-               className="text-blue-600 hover:text-blue-800 text-sm"
+               className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded-md transition-colors"
              >
                + Add Counselor
              </button>
           </div>
           {leadership.counselors.length === 0 ? (
-            <p className="text-gray-500 text-sm mb-4">No counselors assigned</p>
+            <p className="text-gray-500 text-sm mb-4 italic">No counselors assigned</p>
           ) : (
             renderUserList(leadership.counselors, ROLES.COUNSELOR)
           )}
@@ -251,7 +276,7 @@ const UserManagement: React.FC = () => {
   const [newUserRoles, setNewUserRoles] = useState<string[]>(['Counselor']);
   const [newUserGrade, setNewUserGrade] = useState('');
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<'users' | 'byGrade' | 'leadership'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'leadership'>('users');
 
   const fetchData = async () => {
     try {
@@ -438,16 +463,10 @@ const UserManagement: React.FC = () => {
           All Users
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === 'byGrade' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}
-          onClick={() => setActiveTab('byGrade')}
-        >
-          Users by Grade
-        </button>
-        <button
           className={`px-4 py-2 ${activeTab === 'leadership' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}
           onClick={() => setActiveTab('leadership')}
         >
-          Leadership by Grade
+          Leadership Assignment
         </button>
       </div>
       
@@ -535,48 +554,6 @@ const UserManagement: React.FC = () => {
           </div>
         )}
         
-        {/* Users by Grade Tab */}
-        {activeTab === 'byGrade' && (
-          <div>
-            <h3 className="text-xl font-semibold mb-4">Users by Grade</h3>
-            {Object.keys(usersByGrade).length === 0 ? (
-              <p className="text-gray-500">No users assigned to grades yet.</p>
-            ) : (
-              <div className="space-y-6">
-                {Object.entries(usersByGrade).map(([gradeId, gradeUsers]) => (
-                  <div key={gradeId} className="border rounded-lg overflow-hidden shadow-sm bg-white dark:bg-gray-800">
-                    <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 font-medium">
-                      {getGradeName(gradeId)}
-                    </div>
-                    <table className="min-w-full">
-                       <thead className="bg-gray-50 dark:bg-gray-800">
-                         <tr>
-                           <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                           <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Roles</th>
-                         </tr>
-                       </thead>
-                       <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                         {gradeUsers.map((u) => (
-                           <tr key={u.id}>
-                             <td className="py-2 px-4 text-sm">{u.email}</td>
-                             <td className="py-2 px-4">
-                               {u.roles.map((role) => (
-                                 <span key={role} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1 mb-1">
-                                   {role}
-                                 </span>
-                               ))}
-                               {u.roles.length === 0 && <span className="text-xs text-gray-500">No roles</span>}
-                             </td>
-                           </tr>
-                         ))}
-                       </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
         
         {/* Leadership by Grade Tab (Card View) */}
         {activeTab === 'leadership' && (

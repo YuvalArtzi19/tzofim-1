@@ -22,6 +22,20 @@
 
 ## 📝 Recent Changes
 
+- Enhanced admin page UI and functionality:
+  - Removed redundant "Users by Grade" tab
+  - Renamed "Leadership by Grade" tab to "Leadership Assignment"
+  - Implemented color-coded leadership cards based on counselor count:
+    - Red for grades with no counselors
+    - Orange for grades with 1-2 counselors
+    - Green for grades with 3+ counselors
+  - Improved overall UI with modern styling:
+    - Better color contrast and accessibility
+    - Enhanced typography and spacing
+    - Modern card design with hover effects
+    - Consistent styling throughout
+
+
 - Fixed logout functionality:
   - Updated the logout function in AuthContext.tsx to force a page reload after logout
   - This ensures all components update properly and the user is redirected to the home page

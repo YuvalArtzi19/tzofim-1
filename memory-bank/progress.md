@@ -36,6 +36,11 @@
     - Added automatic data loading and saving.
     - Added proper grade validation for events.
     - Added total attendance tracking.
+    - Enhanced admin page UI:
+        - Streamlined navigation by removing redundant "Users by Grade" tab
+        - Improved leadership management with color-coded grade cards
+        - Added visual indicators for counselor staffing levels
+        - Modernized UI with improved typography, spacing, and card design
 
 ## 🏗️ What's Left to Build (MVP Scope)
 
@@ -60,7 +65,7 @@
     - Database schema design and implementation.
     - API endpoints for all features - *Mock auth, user management, and messaging endpoints implemented*.
     - Frontend UI components for all features - *Auth, user management, and messaging components implemented*.
-
+    - Message search functionality - *Backend API endpoint implemented*.
 ## 🚦 Current Status
 
 - **Phase:** User Management & Messaging Enhancements
