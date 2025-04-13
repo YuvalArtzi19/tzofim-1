@@ -5,13 +5,17 @@
 - **Memory Bank:** Core documentation files initialized.
 - **Git:** Repository initialized, `.gitignore` created, initial commit made.
 - **Project Structure:** `client/` and `server/` directories created.
-- **Server Setup:** Basic `package.json` initialized in `server/`.
+- **Server Setup:**
+    - Basic `package.json` initialized.
+    - Express installed.
+    - `nodemon` installed and `npm run dev` script added.
+    - Basic `server/server.js` created.
 - **Client Setup:** Basic Next.js project initialized in `client/`.
 
 ## 🏗️ What's Left to Build (MVP Scope)
 
 - **Core Application Structure:**
-    - Basic server setup (Install Express, create basic structure).
+    - *Basic server setup complete.*
     - Basic frontend setup (Verify Next.js runs).
 - **Features:**
     - Role-based login system (Users: Scout Leader, Grade Manager, Counselor).
