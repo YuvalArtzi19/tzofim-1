@@ -53,19 +53,19 @@
 
 ## 🚀 Next Steps
 
-1. Update `progress.md` to reflect the recent enhancements.
-2. Commit all changes to Git.
-3. Implement additional user management features:
+1. ~~Update `progress.md` to reflect the recent enhancements.~~ *Completed*
+2. ~~Commit all changes to Git.~~ *Completed*
+3. ~~Address the Git push connection issue.~~ *Resolved*
+4. Implement additional user management features:
    - User profile editing
    - Password reset functionality
    - User activity tracking
-4. Enhance messaging features:
+5. Enhance messaging features:
    - Message search functionality
    - File attachments in messages
    - Message reactions
-5. Implement the forms and document upload features from the MVP scope.
-6. Revisit database decision when ready to move beyond mock data.
-7. Address the Git push connection issue when possible.
+6. Implement the forms and document upload features from the MVP scope.
+7. Revisit database decision when ready to move beyond mock data.
 
 ## 🤔 Active Decisions & Considerations
 
@@ -73,6 +73,7 @@
   - ~~Logout doesn't work well.~~ *Fixed by forcing page reload after logout.*
   - ~~Counselors get "channel not found" message when trying to post messages.~~ *Fixed by implementing proper channel access control.*
   - ~~Add User modal and Delete User Confirmation modal were incorrectly nested.~~ *Fixed by moving them outside the Change Roles modal.*
+  - ~~Git push to remote repository failed.~~ *Resolved.*
 
 - **Role-Based Access Control:** Implemented a comprehensive RBAC system:
   - Admins can access and modify everything

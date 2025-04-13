@@ -55,10 +55,10 @@
 ## 🚦 Current Status
 
 - **Phase:** User Management & Messaging Enhancements
-- **Blockers:** None locally. Git push pending resolution of connection issue.
+- **Blockers:** None. All issues resolved.
 
 ## ❗ Known Issues
-- Git push to remote repository failed (connection timeout). Needs investigation (SSH keys/network).
+- ~~Git push to remote repository failed (connection timeout).~~ *Resolved.*
 - *CORS handling implemented.*
 - ~~Signup and login functionality for newly signed-up users is not working correctly.~~ *Fixed by implementing a global auth provider and adding redirection after login/signup.*
 - *Fixed syntax error in SignupForm.tsx (removed extra closing div tag) that was causing build failures.*
