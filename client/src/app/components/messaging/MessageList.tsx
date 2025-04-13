@@ -11,6 +11,7 @@ type Message = {
   userName: string;
   text: string;
   timestamp: string;
+  edited?: boolean;
 };
 
 type MessageListProps = {
@@ -22,6 +23,8 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editMessageText, setEditMessageText] = useState('');
   
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -70,6 +73,54 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
     }
   };
 
+  const handleStartEdit = (message: Message) => {
+    setEditingMessageId(message.id);
+    setEditMessageText(message.text);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditMessageText('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!channelId || !editingMessageId || !editMessageText.trim() || !user) {
+      return;
+    }
+
+    try {
+      const updatedMessage = await messagingAPI.editMessage(channelId, editingMessageId, editMessageText);
+      
+      // Update the message in the local state
+      setMessages(messages.map(m =>
+        m.id === editingMessageId ? updatedMessage : m
+      ));
+      
+      // Reset editing state
+      setEditingMessageId(null);
+      setEditMessageText('');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to edit message');
+      console.error('Error editing message:', err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!channelId || !user) {
+      return;
+    }
+
+    try {
+      await messagingAPI.deleteMessage(channelId, messageId);
+      
+      // Remove the message from the local state
+      setMessages(messages.filter(m => m.id !== messageId));
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete message');
+      console.error('Error deleting message:', err);
+    }
+  };
+
   if (!channelId) {
     return (
       <div className="flex-grow flex items-center justify-center p-8 text-gray-500">
@@ -93,29 +144,79 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
         ) : (
           <div className="space-y-4">
             {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`flex ${message.userId === user?.id ? 'justify-end' : 'justify-start'}`}
+              <div
+                key={message.id}
+                className={`flex ${message.userId === user?.id ? 'justify-end' : 'justify-start'} group`}
               >
-                <div 
+                <div
                   className={`max-w-[70%] rounded-lg p-3 ${
-                    message.userId === user?.id 
-                      ? 'bg-blue-600 text-white' 
+                    message.userId === user?.id
+                      ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 dark:bg-gray-700'
                   }`}
                 >
-                  <div className="text-xs mb-1">
-                    {message.userId !== user?.id && (
-                      <span className="font-semibold">{message.userName}</span>
+                  <div className="text-xs mb-1 flex justify-between">
+                    <div>
+                      {message.userId !== user?.id && (
+                        <span className="font-semibold">{message.userName}</span>
+                      )}
+                      <span className="text-opacity-75 ml-2">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                      {message.edited && <span className="ml-2 italic">(edited)</span>}
+                    </div>
+                    
+                    {/* Edit/Delete buttons for own messages */}
+                    {message.userId === user?.id && (
+                      <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleStartEdit(message)}
+                          className="text-xs hover:underline"
+                          aria-label="Edit message"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="text-xs hover:underline"
+                          aria-label="Delete message"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     )}
-                    <span className="text-opacity-75 ml-2">
-                      {new Date(message.timestamp).toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                      })}
-                    </span>
                   </div>
-                  <div>{message.text}</div>
+                  
+                  {/* Message content or edit form */}
+                  {editingMessageId === message.id ? (
+                    <div className="mt-1">
+                      <input
+                        type="text"
+                        value={editMessageText}
+                        onChange={(e) => setEditMessageText(e.target.value)}
+                        className="w-full px-2 py-1 text-black border rounded"
+                      />
+                      <div className="flex justify-end mt-1 space-x-2">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="text-xs px-2 py-1 bg-gray-300 text-gray-700 rounded"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveEdit}
+                          className="text-xs px-2 py-1 bg-green-500 text-white rounded"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>{message.text}</div>
+                  )}
                 </div>
               </div>
             ))}

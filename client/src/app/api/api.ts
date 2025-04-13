@@ -24,9 +24,14 @@ api.interceptors.request.use(
 
 // Authentication API calls
 export const authAPI = {
-  signup: async (email: string, password: string) => {
-    // Default role is always 'Counselor' for new signups
-    const response = await api.post('/api/auth/signup', { email, password, role: 'Counselor' });
+  signup: async (email: string, password: string, grade: string = '') => {
+    // Default roles is always ['Counselor'] for new signups
+    const response = await api.post('/api/auth/signup', {
+      email,
+      password,
+      roles: ['Counselor'],
+      grade
+    });
     return response.data;
   },
   
@@ -75,6 +80,59 @@ export const messagingAPI = {
   
   sendMessage: async (channelId: number, text: string) => {
     const response = await api.post(`/api/channels/${channelId}/messages`, { text });
+    return response.data;
+  },
+  
+  editMessage: async (channelId: number, messageId: number, text: string) => {
+    const response = await api.put(`/api/channels/${channelId}/messages/${messageId}`, { text });
+    return response.data;
+  },
+  
+  deleteMessage: async (channelId: number, messageId: number) => {
+    const response = await api.delete(`/api/channels/${channelId}/messages/${messageId}`);
+    return response.data;
+  }
+};
+
+// User management API calls
+export const userAPI = {
+  getUsers: async () => {
+    const response = await api.get('/api/admin/users');
+    return response.data;
+  },
+  
+  getUsersByGrade: async () => {
+    const response = await api.get('/api/admin/users/by-grade');
+    return response.data;
+  },
+  
+  getLeadershipByGrade: async () => {
+    const response = await api.get('/api/admin/grades/leadership');
+    return response.data;
+  },
+  
+  updateUserRoles: async (userId: number, roles: string[]) => {
+    const response = await api.put(`/api/admin/users/${userId}/roles`, { roles });
+    return response.data;
+  },
+  
+  updateUserGrade: async (userId: number, grade: string) => {
+    const response = await api.put(`/api/admin/users/${userId}/grade`, { grade });
+    return response.data;
+  },
+  
+  deleteUser: async (userId: number) => {
+    const response = await api.delete(`/api/admin/users/${userId}`);
+    return response.data;
+  },
+  
+  createUser: async (email: string, password: string, roles: string[] = ['Counselor'], grade: string = '') => {
+    const response = await api.post('/api/admin/users', { email, password, roles, grade });
+    return response.data;
+  },
+  
+  removeUserGrade: async (userId: number) => {
+    const response = await api.delete(`/api/admin/users/${userId}/grade`);
     return response.data;
   }
 };

@@ -24,7 +24,9 @@ const ChannelList: React.FC<ChannelListProps> = ({ onSelectChannel, selectedChan
   const [newChannelGrade, setNewChannelGrade] = useState('');
   
   const { user } = useAuth();
-  const isLeaderOrAdmin = user?.role === 'Scout Leader' || user?.role === 'Admin';
+  const isLeaderOrAdmin = user?.roles?.includes('Tribe Leader') || user?.roles?.includes('Admin');
+  const isCounselor = user?.roles?.includes('Counselor');
+  const canCreateChannel = isLeaderOrAdmin || isCounselor;
 
   // Fetch channels on component mount
   useEffect(() => {
@@ -79,7 +81,7 @@ const ChannelList: React.FC<ChannelListProps> = ({ onSelectChannel, selectedChan
     <div className="w-full h-full flex flex-col border-r dark:border-gray-700">
       <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
         <h2 className="font-semibold text-lg">Channels</h2>
-        {isLeaderOrAdmin && (
+        {canCreateChannel && (
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="text-blue-600 hover:text-blue-800 text-sm"
@@ -122,15 +124,27 @@ const ChannelList: React.FC<ChannelListProps> = ({ onSelectChannel, selectedChan
               <label htmlFor="channelGrade" className="block text-sm font-medium mb-1">
                 Grade
               </label>
-              <input
-                id="channelGrade"
-                type="text"
-                value={newChannelGrade}
-                onChange={(e) => setNewChannelGrade(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                placeholder="e.g., 7th"
-                required
-              />
+              {isCounselor && !isLeaderOrAdmin ? (
+                // Counselors can only create channels for their assigned grade
+                <input
+                  id="channelGrade"
+                  type="text"
+                  value={user?.grade || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-100"
+                />
+              ) : (
+                // Admins and Tribe Leaders can create channels for any grade
+                <input
+                  id="channelGrade"
+                  type="text"
+                  value={newChannelGrade}
+                  onChange={(e) => setNewChannelGrade(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="e.g., 7th"
+                  required
+                />
+              )}
             </div>
             <button
               type="submit"
@@ -146,7 +160,7 @@ const ChannelList: React.FC<ChannelListProps> = ({ onSelectChannel, selectedChan
         {channels.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
             No channels available.
-            {isLeaderOrAdmin && !showCreateForm && (
+            {canCreateChannel && !showCreateForm && (
               <div className="mt-2">
                 <button
                   onClick={() => setShowCreateForm(true)}

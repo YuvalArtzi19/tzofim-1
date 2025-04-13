@@ -16,7 +16,7 @@ const Navigation = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {user.email}
           </span>
-          {(user.role === 'Admin' || user.role === 'Scout Leader') && (
+          {(user.roles?.includes('Admin') || user.roles?.includes('Tribe Leader')) && (
             <Link href="/admin" className="text-blue-600 hover:underline text-sm mr-2">
               Admin
             </Link>

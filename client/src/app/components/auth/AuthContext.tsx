@@ -7,7 +7,8 @@ import { authAPI } from '../../api/api';
 type User = {
   id: number;
   email: string;
-  role: string;
+  roles: string[];
+  grade: string;
 };
 
 type AuthContextType = {
@@ -70,11 +71,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Signup function
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, grade: string = '') => {
     setLoading(true);
     setError(null);
     try {
-      await authAPI.signup(email, password);
+      await authAPI.signup(email, password, grade);
       // After signup, automatically log in
       await login(email, password);
     } catch (err: any) {
@@ -91,6 +92,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await authAPI.logout();
       setUser(null);
+      
+      // Force a page reload to ensure all components update properly
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Logout failed');
     } finally {

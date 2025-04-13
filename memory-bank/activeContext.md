@@ -1,4 +1,4 @@
-# Active Context: ScoutsTribe - Authentication Fixed & Frontend Components Implemented
+# Active Context: ScoutsTribe - User Management & Messaging Enhancements
 
 ## 🎯 Current Focus
 
@@ -22,48 +22,61 @@
 
 ## 📝 Recent Changes
 
-- Initialized core Memory Bank files (`productContext.md`, `systemPatterns.md`, `techContext.md`, `activeContext.md`, `progress.md`).
-- Created `.gitignore` file.
-- Initialized Git repository.
-- Created `client/` and `server/` directories.
-- Initialized `package.json` in `server/` using `npm init -y`.
-- Initialized Next.js project in `client/` using `npx create-next-app`.
-- Attempted initial Git push (failed due to connection issue).
-- Corrected client project location (moved from `server/client` to `client/`).
-- Installed `express` and `nodemon` in `server/`.
-- Added `dev` script to `server/package.json`.
-- Updated `progress.md` to reflect server setup.
-- Committed server setup changes to Git.
-- Updated authentication routes (`/api/auth/...`) in `server/server.js` with mock logic using an in-memory user array.
-- Added mock RBAC middleware (`checkAuth`, `checkRole`) and a sample protected route to `server/server.js`.
-- Added mock data structures for channels and messages in `server/server.js`.
-- Implemented messaging channel API endpoints (`/api/channels`, `/api/channels/:channelId/messages`).
-- Tested authentication, RBAC, and protected routes using `curl`.
-- Installed axios in the client for API communication.
-- Created folder structure for frontend components.
-- Implemented authentication context and components.
-- Implemented messaging components.
-- Created pages for login, signup, and messaging.
-- Updated the home page with navigation and information about ScoutsTribe.
-- Installed CORS package and implemented CORS middleware in the server.
+- Fixed logout functionality:
+  - Updated the logout function in AuthContext.tsx to force a page reload after logout
+  - This ensures all components update properly and the user is redirected to the home page
+
+- Fixed the "channel not found" issue for counselors:
+  - Added a helper function `canAccessChannel` in server.js to check if a user has access to a channel
+  - Implemented proper role-based access control:
+    - Admins and Tribe Leaders can access all channels
+    - Counselors can only access channels for their assigned grade
+  - Updated the channel listing endpoint to only show channels that the user has access to
+  - Added access checks to both GET and POST endpoints for channel messages
+
+- Added the ability for counselors to create channels related to their grades:
+  - Updated the server.js file to allow counselors to create channels for their assigned grade
+  - Modified the ChannelList.tsx component to show the "Create Channel" button for counselors
+  - For counselors, the grade field is automatically set to their assigned grade and disabled
+
+- Added message editing and deletion capabilities:
+  - Added new endpoints in server.js for editing and deleting messages
+  - Added new API functions in api.ts for editing and deleting messages
+  - Updated the MessageList.tsx component with:
+    - Edit and Delete buttons that appear on hover for the user's own messages
+    - An inline edit form that appears when the Edit button is clicked
+    - Visual indication when a message has been edited (shows "(edited)" next to timestamp)
+
+- Fixed user management issues:
+  - Fixed an issue with duplicate user IDs by updating the nextUserId counter
+  - Fixed the Add User modal and Delete User Confirmation modal that were incorrectly nested
 
 ## 🚀 Next Steps
 
-1.  Update `progress.md` to reflect the frontend implementation.
-2.  Commit documentation updates (`activeContext`, `progress`) and frontend implementation to Git.
-3.  Test the frontend application by running the client and server together.
-4.  *CORS handling implemented in the backend.*
-5.  *Fixed syntax error in SignupForm.tsx (removed extra closing div tag).*
-6.  *Fixed authentication issues by implementing a global auth provider and adding redirection after login/signup.*
-6.  Continue implementing additional core features from the MVP scope (e.g., forms, document upload).
-7.  Revisit database decision when ready to move beyond mock data.
-8.  Address the Git push connection issue when possible.
+1. Update `progress.md` to reflect the recent enhancements.
+2. Commit all changes to Git.
+3. Implement additional user management features:
+   - User profile editing
+   - Password reset functionality
+   - User activity tracking
+4. Enhance messaging features:
+   - Message search functionality
+   - File attachments in messages
+   - Message reactions
+5. Implement the forms and document upload features from the MVP scope.
+6. Revisit database decision when ready to move beyond mock data.
+7. Address the Git push connection issue when possible.
 
 ## 🤔 Active Decisions & Considerations
 
 - **Known Issues:**
-  - ~~Signup and login functionality for newly signed-up users is not working correctly.~~ *Fixed by implementing a global auth provider and adding redirection after login/signup.*
-  - ~~Fixed a syntax error in SignupForm.tsx that was causing build failures (extra closing div tag).~~ *Resolved.*
+  - ~~Logout doesn't work well.~~ *Fixed by forcing page reload after logout.*
+  - ~~Counselors get "channel not found" message when trying to post messages.~~ *Fixed by implementing proper channel access control.*
+  - ~~Add User modal and Delete User Confirmation modal were incorrectly nested.~~ *Fixed by moving them outside the Change Roles modal.*
 
-- **Technology Choices:** Database choice deferred. Proceeding with mock data for authentication. Still using React/Next.js and Node.js/Express as planned.
-- **Directory Structure:** Deciding on the optimal monorepo or separate repo structure. Starting with a simple top-level `client` and `server` directory structure within this workspace.
+- **Role-Based Access Control:** Implemented a comprehensive RBAC system:
+  - Admins can access and modify everything
+  - Tribe Leaders can access all grades but can only create/modify content for their assigned grades
+  - Counselors can only access and modify content for their assigned grade
+
+- **Technology Choices:** Database choice deferred. Proceeding with mock data for authentication and messaging. Still using React/Next.js and Node.js/Express as planned.
