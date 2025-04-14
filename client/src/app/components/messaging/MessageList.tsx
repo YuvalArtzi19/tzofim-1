@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { messagingAPI } from '../../api/api';
+import { messagingAPI, userAPI } from '../../api/api';
 import { useAuth } from '../auth/AuthContext';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 type Message = {
   id: number;
@@ -12,7 +14,21 @@ type Message = {
   text: string;
   timestamp: string;
   edited?: boolean;
+  mentions?: string[]; // Array of mentioned usernames
 };
+
+type EmojiData = {
+  id: string;
+  native: string;
+  unified: string;
+};
+
+interface User {
+  id: number;
+  email: string;
+  roles: string[];
+  grade?: string;
+}
 
 type MessageListProps = {
   channelId: number | null;
@@ -25,9 +41,29 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
   const [editMessageText, setEditMessageText] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const [cursorPosition, setCursorPosition] = useState<number>(0);
+  const [users, setUsers] = useState<User[]>([]);
   
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionListRef = useRef<HTMLDivElement>(null);
+
+  // Get all users for mentions
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await userAPI.getUsers();
+        setUsers(response);
+      } catch (err) {
+        console.error('Error fetching users for mentions:', err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   // Fetch messages when channelId changes
   useEffect(() => {
@@ -91,12 +127,10 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
     try {
       const updatedMessage = await messagingAPI.editMessage(channelId, editingMessageId, editMessageText);
       
-      // Update the message in the local state
       setMessages(messages.map(m =>
         m.id === editingMessageId ? updatedMessage : m
       ));
       
-      // Reset editing state
       setEditingMessageId(null);
       setEditMessageText('');
     } catch (err: any) {
@@ -112,8 +146,6 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
 
     try {
       await messagingAPI.deleteMessage(channelId, messageId);
-      
-      // Remove the message from the local state
       setMessages(messages.filter(m => m.id !== messageId));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to delete message');
@@ -169,7 +201,6 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
                       {message.edited && <span className="ml-2 italic">(edited)</span>}
                     </div>
                     
-                    {/* Edit/Delete buttons for own messages */}
                     {message.userId === user?.id && (
                       <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
@@ -190,7 +221,6 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
                     )}
                   </div>
                   
-                  {/* Message content or edit form */}
                   {editingMessageId === message.id ? (
                     <div className="mt-1">
                       <input
@@ -215,7 +245,18 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
                       </div>
                     </div>
                   ) : (
-                    <div>{message.text}</div>
+                    <div className="whitespace-pre-wrap">
+                      {message.text.split(/(@\w+(?:\.\w+)*)/g).map((part, index) => {
+                        if (part.match(/@\w+(?:\.\w+)*/)) {
+                          return (
+                            <span key={index} className="text-blue-500 hover:underline cursor-pointer font-medium">
+                              {part}
+                            </span>
+                          );
+                        }
+                        return part;
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
@@ -227,22 +268,103 @@ const MessageList: React.FC<MessageListProps> = ({ channelId }) => {
       
       {/* Message input */}
       <div className="border-t dark:border-gray-700 p-4">
-        <form onSubmit={handleSendMessage} className="flex">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={!user}
-          />
-          <button
-            type="submit"
-            disabled={!newMessage.trim() || !user}
-            className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Send
-          </button>
+        <form onSubmit={handleSendMessage} className="flex flex-col space-y-2">
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                setCursorPosition(e.target.selectionStart);
+                
+                // Handle @ mentions
+                const currentPosition = e.target.selectionStart;
+                const textBeforeCursor = e.target.value.slice(0, currentPosition);
+                const lastWord = textBeforeCursor.split(/\s/).pop() || '';
+                
+                if (lastWord.startsWith('@')) {
+                  setMentionFilter(lastWord.slice(1).toLowerCase());
+                  setShowMentions(true);
+                } else {
+                  setShowMentions(false);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (newMessage.trim()) {
+                    handleSendMessage(e);
+                  }
+                }
+              }}
+              placeholder="Type a message... (Shift + Enter for new line, @ for mentions)"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[2.5rem] max-h-32 resize-y pr-24"
+              disabled={!user}
+            />
+            
+            {/* Emoji and Send buttons */}
+            <div className="absolute right-2 top-2 flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                😊
+              </button>
+              <button
+                type="submit"
+                disabled={!newMessage.trim() || !user}
+                className="px-4 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </button>
+            </div>
+            
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-full mb-2 right-0">
+                <Picker
+                  data={data}
+                  onEmojiSelect={(emoji: EmojiData) => {
+                    const start = newMessage.slice(0, cursorPosition);
+                    const end = newMessage.slice(cursorPosition);
+                    setNewMessage(start + emoji.native + end);
+                    setShowEmojiPicker(false);
+                    textareaRef.current?.focus();
+                  }}
+                  theme="light"
+                />
+              </div>
+            )}
+            
+            {/* Mentions List */}
+            {showMentions && (
+              <div
+                ref={mentionListRef}
+                className="absolute bottom-full left-0 mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-48 overflow-y-auto"
+              >
+                {users
+                  .filter(u => u.email.toLowerCase().includes(mentionFilter))
+                  .map(u => (
+                    <button
+                      key={u.id}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        const textBeforeCursor = newMessage.slice(0, cursorPosition);
+                        const textAfterCursor = newMessage.slice(cursorPosition);
+                        const lastAtSymbol = textBeforeCursor.lastIndexOf('@');
+                        const newText = textBeforeCursor.slice(0, lastAtSymbol) + '@' + u.email + ' ' + textAfterCursor;
+                        setNewMessage(newText);
+                        setShowMentions(false);
+                        textareaRef.current?.focus();
+                      }}
+                    >
+                      {u.email}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
         </form>
       </div>
     </div>

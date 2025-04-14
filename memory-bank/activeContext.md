@@ -65,6 +65,13 @@
   - Fixed an issue with duplicate user IDs by updating the nextUserId counter
   - Fixed the Add User modal and Delete User Confirmation modal that were incorrectly nested
 
+- Enhanced messaging features:
+  - Added emoji picker support with emoji-mart integration
+  - Added user mentions with @ symbol and auto-complete
+  - Improved multi-line message support with Shift+Enter
+  - Enhanced message input UI with modern styling
+  - Added real-time mention suggestions from user list
+
 ## 🚀 Next Steps
 
 1. ~~Update `progress.md` to reflect the recent enhancements.~~ *Completed*

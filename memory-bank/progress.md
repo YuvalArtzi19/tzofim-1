@@ -42,6 +42,13 @@
         - Added visual indicators for counselor staffing levels
         - Modernized UI with improved typography, spacing, and card design
 
+- **Enhanced Messaging Features:**
+   - Added emoji picker support with emoji-mart integration
+   - Added user mentions with @ symbol and auto-complete
+   - Improved multi-line message support with Shift+Enter
+   - Enhanced message input UI with modern styling
+   - Added real-time mention suggestions from user list
+
 ## 🏗️ What's Left to Build (MVP Scope)
 
 - **Core Application Structure:**
